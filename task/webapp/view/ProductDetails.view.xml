@@ -1,0 +1,133 @@
+<mvc:View
+  controllerName="task.controller.ProductDetails"
+  xmlns="sap.uxap"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:m="sap.m"
+  xmlns:form="sap.ui.layout.form">
+
+  <ObjectPageLayout id="ObjectPageLayout"
+    showFooter="{viewModel>/editable}"
+    showHeaderContent="true" useIconTabBar="true">
+    <headerTitle>
+      <ObjectPageHeader objectTitle="{product>/Name}" objectSubtitle="{product>/ID}">
+        <breadcrumbs>
+          <m:Breadcrumbs>
+            <m:Link text="Home" press="onNavHome" />
+            <m:Link text="{product>/Name}" />
+          </m:Breadcrumbs>
+        </breadcrumbs>
+
+        <actions>
+          <ObjectPageHeaderActionButton visible="{= !${viewModel>/editable} }"
+            icon="sap-icon://edit"
+            text="Edit" hideText="false"
+            press="onEditPress" />
+
+          <ObjectPageHeaderActionButton visible="{= !${viewModel>/editable} }"
+            icon="sap-icon://delete"
+            text="Delete" hideText="false"
+            press="onDeletePress"
+          />
+        </actions>
+      </ObjectPageHeader>
+    </headerTitle>
+
+
+    <sections>
+      <ObjectPageSection title="Product Info">
+        <subSections>
+          <ObjectPageSubSection title="Details">
+            <form:SimpleForm editable="{viewModel>/editable}" layout="ResponsiveGridLayout">
+              <form:content>
+                <m:Label text="Name" />
+                <m:Input value="{product>/Name}" required="true" />
+                <m:Label text="Description" />
+                <m:TextArea value="{product>/Description}" rows="3" />
+                <m:Label text="Release Date" />
+                <m:DatePicker
+                  id="releaseDatePicker"
+                  value="{ 
+                    path: 'product>/ReleaseDate',
+                    type: 'sap.ui.model.type.Date',
+                    formatOptions: { pattern: 'MM/yyyy' }
+                  }"
+                  displayFormat="MM/yyyy"
+                  valueFormat="MM/yyyy"
+                  placeholder="MM/YYYY"
+                  change="onDateChange"
+                />
+                <m:Label text="Discontinue Date" />
+                <m:DatePicker
+                  id="discontinueDatePicker"
+                  value="{ 
+                    path: 'product>/DiscontinueDate',
+                    type: 'sap.ui.model.type.Date',
+                    formatOptions: { pattern: 'MM/yyyy' }
+                  }"
+                  displayFormat="MM/yyyy"
+                  valueFormat="MM/yyyy"
+                  placeholder="MM/YYYY"
+                  change="onDateChange"
+                />
+                <m:Label text="Price" />
+                <m:Input value="{product>/Price}" type="Number" required="true" />
+              </form:content>
+            </form:SimpleForm>
+          </ObjectPageSubSection>
+
+          <ObjectPageSubSection title="Categories">
+            <m:Table id="categoriesTable" items="{product>/Categories}" mode="MultiSelect">
+              <m:columns>
+                <m:Column>
+                  <m:Text text="ID" />
+                </m:Column>
+                <m:Column>
+                  <m:Text text="Name" />
+                </m:Column>
+              </m:columns>
+              <m:items>
+                <m:ColumnListItem>
+                  <m:cells>
+                    <m:Input value="{product>ID}" editable="{viewModel>/editable}" />
+                    <m:Input value="{product>Name}" editable="{viewModel>/editable}" />
+                  </m:cells>
+                </m:ColumnListItem>
+              </m:items>
+            </m:Table>
+            <m:Toolbar>
+              <m:ToolbarSpacer />
+              <m:Button text="Add" icon="sap-icon://add" press="onAddCategory"
+                visible="{= ${viewModel>/editable} }" />
+              <m:Button text="Delete" icon="sap-icon://delete" press="onDeleteCategory"
+                visible="{= ${viewModel>/editable} }" />
+            </m:Toolbar>
+          </ObjectPageSubSection>
+
+          <ObjectPageSubSection title="Supplier Info">
+            <form:SimpleForm editable="{viewModel>/editable}" layout="ResponsiveGridLayout">
+              <form:content>
+                <m:Label text="Supplier Name" />
+                <m:Input value="{product>/Supplier/Name}" />
+                <m:Label text="Address" />
+                <m:Input value="{product>/Supplier/Address}" />
+              </form:content>
+            </form:SimpleForm>
+          </ObjectPageSubSection>
+        </subSections>
+      </ObjectPageSection>
+    </sections>
+    <footer>
+      <m:Toolbar>
+        <m:ToolbarSpacer />
+        <m:Button
+          text="Save"
+          type="Emphasized"
+          press="onSavePress" />
+        <m:Button
+          text="Cancel"
+          press="onCancelPress" />
+      </m:Toolbar>
+    </footer>
+  </ObjectPageLayout>
+
+</mvc:View>

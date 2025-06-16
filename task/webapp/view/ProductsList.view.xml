@@ -1,0 +1,186 @@
+<mvc:View
+  controllerName="task.controller.ProductsList"
+  xmlns="sap.m"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:f="sap.f"
+  xmlns:form="sap.ui.layout.form"
+  xmlns:filterBar="sap.ui.comp.filterbar"
+  xmlns:core="sap.ui.core"
+  xmlns:formatter="task.controller.formatter">
+
+  <f:DynamicPage id="ProductsList" headerExpanded="true" showFooter="true">
+    <f:title>
+      <f:DynamicPageTitle>
+        <f:heading>
+          <Title text="Product List" level="H1" />
+        </f:heading>
+        <f:breadcrumbs>
+          <Breadcrumbs>
+            <links>
+              <Link text="Home" />
+            </links>
+          </Breadcrumbs>
+        </f:breadcrumbs>
+      </f:DynamicPageTitle>
+    </f:title>
+
+    <f:header>
+      <f:DynamicPageHeader>
+        <f:content>
+          <filterBar:FilterBar
+            id="filterBar"
+            useToolbar="true"
+            search="onFilterSearch"
+            reset="onFilterReset"
+            showRestoreButton="true"
+          >
+            <filterBar:filterGroupItems>
+              <filterBar:FilterGroupItem groupName="General" name="GeneralSearch" label="Search"
+                visibleInFilterBar="true">
+                <filterBar:control>
+                  <Input
+                    value="{filters>/GeneralSearch}"
+                    placeholder="Search..."
+                    submit="onFilterSearch"
+                    showSuggestion="true"
+                    suggestionItems="{products>/Products}">
+                    <suggestionItems>
+                      <core:Item text="{products>Name}" key="{products>ID}" />
+                    </suggestionItems>
+                  </Input>
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+
+              <filterBar:FilterGroupItem groupName="Names" name="ProductName" label="Product Name"
+                visibleInFilterBar="true">
+                <filterBar:control>
+                  <Input
+                    value="{filters>/ProductName}"
+                    placeholder="Product Name"
+                    showSuggestion="true"
+                    suggestionItems="{products>/Products}"
+                    submit="onFilterSearch">
+                    <suggestionItems>
+                      <core:Item text="{products>Name}" key="{products>ID}" />
+                    </suggestionItems>
+                  </Input>
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+
+              <filterBar:FilterGroupItem groupName="Dates" name="ReleaseDate" label="Release Date"
+                visibleInFilterBar="true">
+                <filterBar:control>
+                  <DynamicDateRange
+                    id="releaseDateRange"
+                    placeholder="Select date or month/year"
+                    standardOptions="DATE,DATE_RANGE,PREVIOUS_X_MONTHS,LASTMONTH,LASTYEAR"
+                    change="onReleaseDateChange" />
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+
+              <filterBar:FilterGroupItem groupName="Supplier" name="SupplierNames" label="Supplier"
+                visibleInFilterBar="true">
+                <filterBar:control>
+                  <MultiInput
+                    id="supplierInput"
+                    valueHelpRequest="onMultipleConditionsVHRequested" />
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+
+              <filterBar:FilterGroupItem groupName="Categories" name="CategoryKeys"
+                label="Categories" visibleInFilterBar="true">
+                <filterBar:control>
+                  <MultiComboBox
+                    id="categoryFilter"
+                    items="{cats>/Categories}"
+                    selectionFinish="onCategorySelectionFinish"
+                    placeholder="Select categories">
+                    <core:Item key="{cats>ID}" text="{cats>Name}" />
+                  </MultiComboBox>
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+            </filterBar:filterGroupItems>
+          </filterBar:FilterBar>
+        </f:content>
+      </f:DynamicPageHeader>
+    </f:header>
+
+    <f:content>
+      <Table
+        id="productsTable"
+        inset="false"
+        width="auto"
+        mode="MultiSelect"
+        selectionChange=".onSelectionChange"
+        noDataText="No products available"
+        items="{products>/Products}"
+        growing="true"
+        growingThreshold="20"
+      >
+        <headerToolbar>
+          <Toolbar>
+            <Title text="Products" level="H2" />
+            <ToolbarSpacer />
+            <Button
+              text="New Product"
+              icon="sap-icon://add"
+              press=".onCreatePress"
+            />
+            <Button
+              text="Delete Selected"
+              enabled="false"
+              id="deleteButton"
+              icon="sap-icon://delete"
+              press=".onDelete"
+            />
+          </Toolbar>
+        </headerToolbar>
+        <columns>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="ID" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Name" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Release Date" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Discontinued Date" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Price" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Rating" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Supplier" />
+          </Column>
+          <Column demandPopin="true" minScreenWidth="Desktop">
+            <Text text="Categories" />
+          </Column>
+        </columns>
+        <items>
+          <ColumnListItem type="Active" press="onRowPress">
+            <cells>
+              <Text text="{products>ID}" />
+              <Text text="{products>Name}" />
+              <Text text="{products>ReleaseDate}" />
+              <Text text="{products>DiscontinuedDate}" />
+              <Text text="{products>Price}" />
+              <RatingIndicator displayOnly="true" value="{products>Rating}" iconSize="1rem" />
+              <Text text="{products>Supplier/Name}" />
+              <Text
+                text="{
+                path: 'products>Categories',
+                formatter: '.formatter.formatCategories'
+              }"
+              />
+            </cells>
+          </ColumnListItem>
+        </items>
+      </Table>
+    </f:content>
+  </f:DynamicPage>
+</mvc:View>
