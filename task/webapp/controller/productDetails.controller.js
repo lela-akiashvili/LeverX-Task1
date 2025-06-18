@@ -6,6 +6,7 @@ sap.ui.define(
     "sap/ui/core/message/Message",
     "sap/ui/core/library",
     "sap/m/MessageBox",
+    "task/model/models",
   ],
   function (
     Controller,
@@ -13,7 +14,8 @@ sap.ui.define(
     MessageToast,
     Message,
     coreLibrary,
-    MessageBox
+    MessageBox,
+    models
   ) {
     "use strict";
 
@@ -24,10 +26,10 @@ sap.ui.define(
         this._oRouter = this.getOwnerComponent().getRouter();
         this._oMessageManager = sap.ui.getCore().getMessageManager();
         this._oMessageManager.registerObject(this.getView(), true);
-        this.getView().setModel(
-          new JSONModel({ editable: false, isNew: false }),
-          "viewModel"
-        );
+
+        const oViewModel = models.createViewModel();
+        this.getView().setModel(oViewModel, "viewModel");
+
         this._oRouter
           .getRoute("ProductDetails")
           .attachPatternMatched(this._onMatched, this);
@@ -54,7 +56,7 @@ sap.ui.define(
 
         if (oProduct) {
           const oCloned = JSON.parse(JSON.stringify(oProduct));
-          const oProductModel = new JSONModel(oCloned);
+          const oProductModel = models.createProductModel(oCloned);
           oView.setModel(oProductModel, "product");
           oViewModel.setProperty("/editable", false);
           oViewModel.setProperty("/isNew", false);
@@ -87,9 +89,11 @@ sap.ui.define(
 
         if (!oData.Name) {
           this._addMessage("Name is required", "/Name");
+          return
         }
         if (!oData.Price || oData.Price <= 0) {
           this._addMessage("Price must be greater than 0", "/Price");
+          return
         }
 
         const oMasterModel = this.getOwnerComponent().getModel("products");
@@ -129,10 +133,9 @@ sap.ui.define(
           const aProducts = oMasterModel.getProperty("/Products") || [];
           const oOrig = aProducts.find((p) => p.ID === sId);
           if (oOrig) {
-            this.getView().setModel(
-              new JSONModel(JSON.parse(JSON.stringify(oOrig))),
-              "product"
-            );
+            const oCloned = JSON.parse(JSON.stringify(oOrig));
+            const oProductModel = models.createProductModel(oCloned);
+            oView.setModel(oProductModel, "product");
           }
           oViewModel.setProperty("/editable", false);
         }
@@ -193,7 +196,7 @@ sap.ui.define(
         }
         this._oRouter.navTo("ProductsList");
       },
-      
+
       onDateChange: function (oEvent) {
         const oDatePicker = oEvent.getSource();
         const sValue = oDatePicker.getValue();

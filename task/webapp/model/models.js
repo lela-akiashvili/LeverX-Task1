@@ -18,8 +18,8 @@ sap.ui.define(
               ID: "P001",
               Name: "Product 1",
               Description: "This is the description for product 1.",
-              ReleaseDate: "05/2025",
-              DiscontinuedDate: "05/2025",
+              ReleaseDate: new Date(2020, 5, 17),
+              DiscontinuedDate: new Date(2023, 5, 17),
               Rating: 1,
               Price: 70.9,
               Categories: [
@@ -35,11 +35,35 @@ sap.ui.define(
               },
             },
             {
+              ID: "P008",
+              Name: "Product 2",
+              Description: "This is the description for product 2.",
+              ReleaseDate: new Date(2021, 5, 17),
+              DiscontinuedDate: new Date(2022, 5, 17),
+              Rating: 5,
+              Price: 54.5,
+              Categories: [
+                {
+                  ID: "C01",
+                  Name: "Category 1",
+                },
+                {
+                  ID: "C04",
+                  Name: "Category 4",
+                },
+              ],
+              Supplier: {
+                ID: "S04",
+                Name: "Supplier 4",
+                Address: "4 Example Street, City 4, Country",
+              },
+            },
+            {
               ID: "P002",
               Name: "Product 2",
               Description: "This is the description for product 2.",
-              ReleaseDate: "05/2025",
-              DiscontinuedDate: "05/2025",
+              ReleaseDate: new Date(2021, 5, 17),
+              DiscontinuedDate: new Date(2025, 5, 17),
               Rating: 5,
               Price: 54.5,
               Categories: [
@@ -62,7 +86,7 @@ sap.ui.define(
               ID: "P003",
               Name: "Product 3",
               Description: "This is the description for product 3.",
-              ReleaseDate: "05/2025",
+              ReleaseDate: new Date(2025, 1, 17),
               DiscontinuedDate: null,
               Rating: 4,
               Price: 89.33,
@@ -80,10 +104,43 @@ sap.ui.define(
             },
           ],
         };
-        
 
         oModel.setData(oData);
         return oModel;
+      },
+
+      createNewProductData: function (sNewId) {
+        const oNewProdModel = new JSONModel({
+          ID: sNewId,
+          Name: "",
+          Description: "",
+          ReleaseDate: null,
+          DiscontinuedDate: null,
+          Rating: 0,
+          Price: null,
+          Categories: [],
+          Supplier: {
+            ID: "",
+            Name: "",
+            Address: "",
+          },
+        });
+        return oNewProdModel;
+      },
+
+      /**
+       * Create the view model for ProductDetails (editable/isNew flags).
+       * @returns {sap.ui.model.json.JSONModel}
+       */
+      createViewModel: function () {
+        return new JSONModel({
+          editable: false,
+          isNew: false,
+        });
+      },
+
+      createProductModel: function (oProductData) {
+        return new JSONModel(oProductData);
       },
     };
   }

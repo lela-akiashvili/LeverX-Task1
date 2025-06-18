@@ -6,7 +6,7 @@
   xmlns:form="sap.ui.layout.form"
   xmlns:filterBar="sap.ui.comp.filterbar"
   xmlns:core="sap.ui.core"
-  xmlns:formatter="task.controller.formatter">
+  xmlns:formatter="task.utils.formatter">
 
   <f:DynamicPage id="ProductsList" headerExpanded="true" showFooter="true">
     <f:title>
@@ -31,18 +31,55 @@
             id="filterBar"
             useToolbar="true"
             search="onFilterSearch"
-            reset="onFilterReset"
-            showRestoreButton="true"
+            reset="onFilterClear"
+            showClearOnFB="true"
           >
             <filterBar:filterGroupItems>
+
+              <!-- General Search -->
               <filterBar:FilterGroupItem groupName="General" name="GeneralSearch" label="Search"
                 visibleInFilterBar="true">
                 <filterBar:control>
-                  <Input
-                    value="{filters>/GeneralSearch}"
+                  <SearchField
+                    id="generalSearchField"
                     placeholder="Search..."
-                    submit="onFilterSearch"
+                    search=".onFilterSearch"
+                  />
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+              <!-- Dates: relesase, discontiue -->
+              <filterBar:FilterGroupItem groupName="ReleaseDate" name="ReleaseDate"
+                label="Release Date"
+                visibleInFilterBar="true">
+                <filterBar:control>
+                  <DynamicDateRange
+                    showClearIcon="true"
+                    id="releaseDateRange"
+                    placeholder="Select date or month/year"
+                    change="onReleaseDateChange" />
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+              <filterBar:FilterGroupItem groupName="DiscontinuedDate" name="DiscontinuedDate"
+                label="Discontinued Date" visibleInFilterBar="true">
+                <filterBar:control>
+                  <DynamicDateRange
+                    showClearIcon="true"
+                    id="discontinuedDateRange"
+                    placeholder="Select date or month/year"
+                    change="onDiscontinuedDateChange" />
+                </filterBar:control>
+              </filterBar:FilterGroupItem>
+              <!-- product name suggestions -->
+              <filterBar:FilterGroupItem groupName="ProductName" name="ProductName"
+                label="Product Name Suggestions"
+                visibleInFilterBar="true">
+                <filterBar:control>
+                  <Input
+                    id="productNameInput"
+                    placeholder="Search..."
+                    submit=".onFilterSearch"
                     showSuggestion="true"
+                    showClearIcon="true"
                     suggestionItems="{products>/Products}">
                     <suggestionItems>
                       <core:Item text="{products>Name}" key="{products>ID}" />
@@ -51,33 +88,7 @@
                 </filterBar:control>
               </filterBar:FilterGroupItem>
 
-              <filterBar:FilterGroupItem groupName="Names" name="ProductName" label="Product Name"
-                visibleInFilterBar="true">
-                <filterBar:control>
-                  <Input
-                    value="{filters>/ProductName}"
-                    placeholder="Product Name"
-                    showSuggestion="true"
-                    suggestionItems="{products>/Products}"
-                    submit="onFilterSearch">
-                    <suggestionItems>
-                      <core:Item text="{products>Name}" key="{products>ID}" />
-                    </suggestionItems>
-                  </Input>
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-
-              <filterBar:FilterGroupItem groupName="Dates" name="ReleaseDate" label="Release Date"
-                visibleInFilterBar="true">
-                <filterBar:control>
-                  <DynamicDateRange
-                    id="releaseDateRange"
-                    placeholder="Select date or month/year"
-                    standardOptions="DATE,DATE_RANGE,PREVIOUS_X_MONTHS,LASTMONTH,LASTYEAR"
-                    change="onReleaseDateChange" />
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-
+              <!-- Supplier value helper -->
               <filterBar:FilterGroupItem groupName="Supplier" name="SupplierNames" label="Supplier"
                 visibleInFilterBar="true">
                 <filterBar:control>
@@ -87,15 +98,19 @@
                 </filterBar:control>
               </filterBar:FilterGroupItem>
 
+              <!-- catogries dropdown -->
               <filterBar:FilterGroupItem groupName="Categories" name="CategoryKeys"
-                label="Categories" visibleInFilterBar="true">
+                label="Select Categories" visibleInFilterBar="true">
                 <filterBar:control>
                   <MultiComboBox
                     id="categoryFilter"
-                    items="{cats>/Categories}"
-                    selectionFinish="onCategorySelectionFinish"
+                    selectionChange="handleSelectionChange"
+                    selectionFinish="handleSelectionFinish"
                     placeholder="Select categories">
-                    <core:Item key="{cats>ID}" text="{cats>Name}" />
+                    <core:Item key="C02" text="Category 2" />
+                    <core:Item key="C01" text="Category 1" />
+                    <core:Item key="C04" text="Category 4" />
+                    <core:Item key="C05" text="Category 5" />
                   </MultiComboBox>
                 </filterBar:control>
               </filterBar:FilterGroupItem>
@@ -166,9 +181,20 @@
             <cells>
               <Text text="{products>ID}" />
               <Text text="{products>Name}" />
-              <Text text="{products>ReleaseDate}" />
-              <Text text="{products>DiscontinuedDate}" />
-              <Text text="{products>Price}" />
+              <Text
+                text="{
+                path: 'products>ReleaseDate',
+                type: 'sap.ui.model.type.Date',
+                formatOptions: { pattern: 'MM/yyyy' }
+              }"
+              />
+              <Text
+                text="{
+                 path: 'products>DiscontinuedDate',
+                 type: 'sap.ui.model.type.Date',
+                 formatOptions: { pattern: 'MM/yyyy' }
+              }" />
+              <Text text="{products>Price}$" />
               <RatingIndicator displayOnly="true" value="{products>Rating}" iconSize="1rem" />
               <Text text="{products>Supplier/Name}" />
               <Text
