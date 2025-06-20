@@ -8,8 +8,8 @@ sap.ui.define(
     "sap/ui/model/FilterOperator",
     "sap/ui/model/FilterType",
     "sap/ui/model/type/String",
-    "sap/m/Token",
     "task/model/models",
+    "sap/ui/comp/library",
   ],
   function (
     Controller,
@@ -20,8 +20,8 @@ sap.ui.define(
     FilterOperator,
     FilterType,
     TypeString,
-    Token,
-    models
+    models,
+    compLibrary
   ) {
     "use strict";
 
@@ -33,10 +33,17 @@ sap.ui.define(
 
         const oFilterBar = this.byId("filterBar");
         oFilterBar.attachClear(this.onFilterClear, this);
-      },
 
-      onValueHelpCancelPress: function () {
-        this._oSupplierConditionDialog.close();
+        this._oMultipleConditionsInput = this.byId("supplierInput");
+        if (this._oMultipleConditionsInput) {
+          this._oMultipleConditionsInput.setTokens([]);
+          // When user manually removes a token, reapply filters
+          this._oMultipleConditionsInput.attachTokenUpdate(
+            function () {
+              this._applyAllFilters();
+            }.bind(this)
+          );
+        }
       },
 
       onFilterSearch: function (oEvent) {
@@ -89,6 +96,10 @@ sap.ui.define(
           typeof oCategoryMCB.setSelectedKeys === "function"
         ) {
           oCategoryMCB.setSelectedKeys([]);
+        }
+
+        if (this._oMultipleConditionsInput) {
+          this._oMultipleConditionsInput.setTokens([]);
         }
         // Clear all filters
         this._applyAllFilters("");
@@ -209,21 +220,62 @@ sap.ui.define(
             });
           }
         }
+        // Supplier Name conditions from ValueHelpDialog tokens
         let oSupplierFilter = null;
-        const oSupplierInput = oView.byId("supplierInput");
-        if (oSupplierInput) {
-          const aTokens = oSupplierInput.getTokens() || [];
-          if (aTokens.length > 0) {
-            // extract the selected supplier IDs
-            const aSelectedSupplierIds = aTokens.map((t) => t.getKey());
-            oSupplierFilter = new Filter({
-              path: "Supplier",
-              test: function (oSupplier) {
-                return (
-                  oSupplier && aSelectedSupplierIds.indexOf(oSupplier.ID) !== -1
-                );
-              },
+        const aTokens = this._oMultipleConditionsInput
+          ? this._oMultipleConditionsInput.getTokens() || []
+          : [];
+        if (aTokens.length > 0) {
+          const aRangeFilters = aTokens
+            .map(function (oToken) {
+              const oRange = oToken.data("range");
+              if (!oRange) {
+                return null;
+              }
+              //  only keyField - "Name"
+              if (oRange.keyField !== "Name") {
+                return null;
+              }
+              const sOp = oRange.operation;
+              const v1 = oRange.value1;
+              // Map ValueHelpRangeOperation to Filter on "Supplier/Name"
+              switch (sOp) {
+                case compLibrary
+                  .valuehelpdialog.ValueHelpRangeOperation.Contains:
+                  return new Filter(
+                    "Supplier/Name",
+                    FilterOperator.Contains,
+                    v1
+                  );
+                case compLibrary
+                  .valuehelpdialog.ValueHelpRangeOperation.StartsWith:
+                  return new Filter(
+                    "Supplier/Name",
+                    FilterOperator.StartsWith,
+                    v1
+                  );
+                case compLibrary.valuehelpdialog.ValueHelpRangeOperation.EQ:
+                  return new Filter("Supplier/Name", FilterOperator.EQ, v1);
+                case compLibrary
+                  .valuehelpdialog.ValueHelpRangeOperation.EndsWith:
+                  return new Filter(
+                    "Supplier/Name",
+                    FilterOperator.EndsWith,
+                    v1
+                  );
+                default:
+                  return null;
+              }
+            })
+            .filter(function (f) {
+              return f;
             });
+
+          if (aRangeFilters.length === 1) {
+            oSupplierFilter = aRangeFilters[0];
+          } else if (aRangeFilters.length > 1) {
+            // Combine multiple conditions with AND semantics:
+            oSupplierFilter = new Filter({ filters: aRangeFilters, and: true });
           }
         }
 
@@ -244,6 +296,7 @@ sap.ui.define(
         if (oSupplierFilter) {
           aAllFilters.push(oSupplierFilter);
         }
+
         let oFinalFilter = null;
         if (aAllFilters.length === 1) {
           oFinalFilter = aAllFilters[0];
@@ -400,6 +453,7 @@ sap.ui.define(
           }.bind(this),
         });
       },
+
       _deleteProducts: function (aSelectedData) {
         const oModel = this.getView().getModel("products");
         const aProducts = oModel.getProperty("/Products") || [];
@@ -438,6 +492,66 @@ sap.ui.define(
         this._oRouter.navTo("ProductDetails", {
           productId: sNewId,
         });
+      },
+
+      onVHRequested: function () {
+        if (!this._oSupplierVHD) {
+          // Load the fragment once
+          this.loadFragment({
+            name: "task.view.fragments.ValueHelpDialog",
+          }).then(
+            function (oDialog) {
+              this._oSupplierVHD = oDialog;
+              this.getView().addDependent(this._oSupplierVHD);
+
+              this._oSupplierVHD.setRangeKeyFields([
+                {
+                  label: "Supplier Name",
+                  key: "Name",
+                  type: "string",
+                  typeInstance: new TypeString({}, { maxLength: 100 }),
+                },
+              ]);
+
+              // populate existing tokens so user sees previous conditions
+              const aExistingTokens =
+                this._oMultipleConditionsInput.getTokens() || [];
+              this._oSupplierVHD.setTokens(aExistingTokens);
+
+              this._oSupplierVHD.open();
+            }.bind(this)
+          );
+        } else {
+          // Reuse existing dialog
+          const aExisting = this._oMultipleConditionsInput.getTokens() || [];
+          this._oSupplierVHD.setTokens(aExisting);
+          this._oSupplierVHD.open();
+        }
+      },
+
+      onValueHelpOkPress: function (oEvent) {
+        const aTokens = oEvent.getParameter("tokens") || [];
+
+        this._oMultipleConditionsInput.setTokens(aTokens);
+
+        // Store tokens for filter logic
+        // this._aSupplierRangeTokens = aTokens.slice();
+        this._oMultipleConditionsInput.getTokens();
+        this._applyAllFilters();
+        this._oSupplierVHD.close();
+      },
+
+      onVHDCancelPress: function () {
+        if (this._oSupplierVHD) {
+          this._oSupplierVHD.close();
+        }
+      },
+
+      onVHDAfterClose: function () {
+        if (this._oSupplierVHD) {
+          this._oSupplierVHD.destroy();
+          this._oSupplierVHD = null;
+        }
       },
     });
   }

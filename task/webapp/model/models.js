@@ -98,7 +98,7 @@ sap.ui.define(
               ],
               Supplier: {
                 ID: "S03",
-                Name: "Supplier 3",
+                Name: "test 3",
                 Address: "3 Example Street, City 3, Country",
               },
             },
@@ -116,7 +116,7 @@ sap.ui.define(
           Description: "",
           ReleaseDate: null,
           DiscontinuedDate: null,
-          Rating: 0,
+          Rating: null,
           Price: null,
           Categories: [],
           Supplier: {

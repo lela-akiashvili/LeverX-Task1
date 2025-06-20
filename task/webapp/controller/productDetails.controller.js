@@ -1,7 +1,6 @@
 sap.ui.define(
   [
     "sap/ui/core/mvc/Controller",
-    "sap/ui/model/json/JSONModel",
     "sap/m/MessageToast",
     "sap/ui/core/message/Message",
     "sap/ui/core/library",
@@ -10,7 +9,6 @@ sap.ui.define(
   ],
   function (
     Controller,
-    JSONModel,
     MessageToast,
     Message,
     coreLibrary,
@@ -23,30 +21,43 @@ sap.ui.define(
 
     return Controller.extend("task.controller.ProductDetails", {
       onInit: function () {
+        // Router
         this._oRouter = this.getOwnerComponent().getRouter();
+
+        // MessageManager for validation messages
         this._oMessageManager = sap.ui.getCore().getMessageManager();
         this._oMessageManager.registerObject(this.getView(), true);
 
+        // View model to hold editable/isNew flags
         const oViewModel = models.createViewModel();
         this.getView().setModel(oViewModel, "viewModel");
 
+        // Attach route match
         this._oRouter
           .getRoute("ProductDetails")
           .attachPatternMatched(this._onMatched, this);
       },
 
+      /**
+       * Route matched handler: load existing product or newProduct model.
+       */
       _onMatched: function (oEvent) {
         const sProductId = oEvent.getParameter("arguments").productId;
         const oView = this.getView();
         const oViewModel = oView.getModel("viewModel");
         const oComponent = this.getOwnerComponent();
 
+        // If there's a "newProduct" model in component and its ID matches, treat as new
         const oNewProdModel = oComponent.getModel("newProduct");
         if (oNewProdModel && oNewProdModel.getProperty("/ID") === sProductId) {
+          // New product: go into edit mode directly
           oView.setModel(oNewProdModel, "product");
           oViewModel.setProperty("/editable", true);
           oViewModel.setProperty("/isNew", true);
           this._oMessageManager.removeAllMessages();
+
+          // a clone so Cancel can clear fields or revert
+          this._storeOriginalData(oNewProdModel.getData());
           return;
         }
 
@@ -55,17 +66,77 @@ sap.ui.define(
         const oProduct = aProducts.find((p) => p.ID === sProductId);
 
         if (oProduct) {
-          const oCloned = JSON.parse(JSON.stringify(oProduct));
+          // Deep clone, preserving Date objects
+          const oCloned = this._cloneProductPreserveDates(oProduct);
+
           const oProductModel = models.createProductModel(oCloned);
           oView.setModel(oProductModel, "product");
+
+          // read-only mode initially
           oViewModel.setProperty("/editable", false);
           oViewModel.setProperty("/isNew", false);
           this._oMessageManager.removeAllMessages();
+
+          // Store original data for Cancel revert
+          this._storeOriginalData(oProduct);
         } else {
           MessageToast.show("Product not found");
           this._oRouter.navTo("ProductsList");
         }
       },
+
+      /**
+       * Store a deep clone of original data in this._oOriginalData
+       * so that Cancel can revert. Input oData may have Date objects.
+       */
+      _storeOriginalData: function (oData) {
+        this._oOriginalData = this._cloneProductPreserveDates(oData);
+      },
+
+      /**
+       * Helper: deep-clone a product object, preserving Date fields.
+       */
+      _cloneProductPreserveDates: function (oProduct) {
+        if (!oProduct) {
+          return null;
+        }
+        const oClone = {
+          ID: oProduct.ID,
+          Name: oProduct.Name,
+          Description: oProduct.Description,
+          ReleaseDate:
+            oProduct.ReleaseDate instanceof Date
+              ? new Date(oProduct.ReleaseDate.getTime())
+              : oProduct.ReleaseDate
+              ? new Date(oProduct.ReleaseDate)
+              : null,
+          DiscontinuedDate:
+            oProduct.DiscontinuedDate instanceof Date
+              ? new Date(oProduct.DiscontinuedDate.getTime())
+              : oProduct.DiscontinuedDate
+              ? new Date(oProduct.DiscontinuedDate)
+              : null,
+          Rating: oProduct.Rating,
+          Price: oProduct.Price,
+          // Clone categories array
+          Categories: Array.isArray(oProduct.Categories)
+            ? oProduct.Categories.map((c) => ({
+                ID: c.ID,
+                Name: c.Name,
+              }))
+            : [],
+          // Clone supplier object
+          Supplier: oProduct.Supplier
+            ? {
+                ID: oProduct.Supplier.ID,
+                Name: oProduct.Supplier.Name,
+                Address: oProduct.Supplier.Address,
+              }
+            : { ID: "", Name: "", Address: "" },
+        };
+        return oClone;
+      },
+
       onNavHome: function () {
         const oViewModel = this.getView().getModel("viewModel");
         if (oViewModel.getProperty("/isNew")) {
@@ -75,39 +146,60 @@ sap.ui.define(
       },
 
       onEditPress: function () {
-        this.getView().getModel("viewModel").setProperty("/editable", true);
+        const oViewModel = this.getView().getModel("viewModel");
+        oViewModel.setProperty("/editable", true);
         this._oMessageManager.removeAllMessages();
+
+        // Store original data for Cancel.
+        const oCurrentData = this.getView().getModel("product").getData();
+        this._storeOriginalData(oCurrentData);
       },
 
+      /**
+       * validate, persist to master model, then exit edit mode.
+       */
       onSavePress: function () {
         const oView = this.getView();
         const oProductModel = oView.getModel("product");
         const oViewModel = oView.getModel("viewModel");
-
         const oData = oProductModel.getData();
+
+        // Clear previous messages
         this._oMessageManager.removeAllMessages();
 
-        if (!oData.Name) {
+        // Basic validation
+        if (!oData.Name || oData.Name.trim() === "") {
           this._addMessage("Name is required", "/Name");
-          return
+          return;
         }
-        if (!oData.Price || oData.Price <= 0) {
+        if (!oData.Price || isNaN(oData.Price) || oData.Price <= 0) {
           this._addMessage("Price must be greater than 0", "/Price");
-          return
+          return;
         }
+        // Rating between 1 and 5
+        if (
+          oData.Rating != null &&
+          (isNaN(oData.Rating) || oData.Rating < 1 || oData.Rating > 5)
+        ) {
+          this._addMessage("Rating must be between 1 and 5", "/Rating");
+          return;
+        }
+        // Further validations (dates) can be added similarly.
 
+        // Persist to master "products" JSONModel
         const oMasterModel = this.getOwnerComponent().getModel("products");
         const aProducts = oMasterModel.getProperty("/Products") || [];
         const sId = oData.ID;
-
         if (oViewModel.getProperty("/isNew")) {
-          aProducts.push(Object.assign({}, oData));
+          // New product: add to array
+          aProducts.push(this._cloneProductPreserveDates(oData));
           oMasterModel.setProperty("/Products", aProducts);
           MessageToast.show("New product created.");
         } else {
+          // Existing: find index and replace
           const iIndex = aProducts.findIndex((p) => p.ID === sId);
           if (iIndex >= 0) {
-            aProducts[iIndex] = Object.assign({}, oData);
+            aProducts[iIndex] = this._cloneProductPreserveDates(oData);
             oMasterModel.setProperty("/Products", aProducts);
             MessageToast.show("Saved successfully");
           } else {
@@ -115,9 +207,15 @@ sap.ui.define(
           }
         }
 
+        // Exit edit mode
         oViewModel.setProperty("/editable", false);
         oViewModel.setProperty("/isNew", false);
+
+        // Clear stored original data
+        this._oOriginalData = null;
       },
+
+      // Cancel button - if new, discard; else revert to original data, then exit edit mode.
 
       onCancelPress: function () {
         const oView = this.getView();
@@ -127,20 +225,33 @@ sap.ui.define(
         if (oViewModel.getProperty("/isNew")) {
           this._discardNewProduct();
         } else {
-          const oData = oView.getModel("product").getData();
-          const sId = oData.ID;
-          const oMasterModel = this.getOwnerComponent().getModel("products");
-          const aProducts = oMasterModel.getProperty("/Products") || [];
-          const oOrig = aProducts.find((p) => p.ID === sId);
-          if (oOrig) {
-            const oCloned = JSON.parse(JSON.stringify(oOrig));
-            const oProductModel = models.createProductModel(oCloned);
+          // Existing: revert to original clone if available, else reload from master
+          if (this._oOriginalData) {
+            const oProductModel = models.createProductModel(
+              this._cloneProductPreserveDates(this._oOriginalData)
+            );
             oView.setModel(oProductModel, "product");
+          } else {
+            // Fallback: reload from master list
+            const oData = this.getView().getModel("product").getData();
+            const sId = oData.ID;
+            const oMasterModel = this.getOwnerComponent().getModel("products");
+            const aProducts = oMasterModel.getProperty("/Products") || [];
+            const oOrig = aProducts.find((p) => p.ID === sId);
+            if (oOrig) {
+              const oCloned = this._cloneProductPreserveDates(oOrig);
+              const oProductModel = models.createProductModel(oCloned);
+              this.getView().setModel(oProductModel, "product");
+            }
           }
+          // Exit edit mode
           oViewModel.setProperty("/editable", false);
         }
       },
 
+      /**
+       * Add validation message via MessageManager
+       */
       _addMessage: function (sMsg, sTargetPath) {
         this._oMessageManager.addMessages(
           new Message({
@@ -152,13 +263,15 @@ sap.ui.define(
         );
       },
 
+      /**
+       * Delete button pressed - confirm then delete.
+       */
       onDeletePress: function () {
         const oProductModel = this.getView().getModel("product");
         if (!oProductModel) {
           MessageToast.show("No product loaded");
           return;
         }
-
         const oData = oProductModel.getData();
         const sId = oData.ID;
 
@@ -177,6 +290,7 @@ sap.ui.define(
           }
         );
       },
+
       _performDelete: function (sId) {
         const oMasterModel = this.getOwnerComponent().getModel("products");
         const aProducts = oMasterModel.getProperty("/Products") || [];
@@ -197,24 +311,27 @@ sap.ui.define(
         this._oRouter.navTo("ProductsList");
       },
 
+      /**
+       * DatePicker change handler: parse MM/YYYY input into Date. On invalid, set error state.
+       */
       onDateChange: function (oEvent) {
-        const oDatePicker = oEvent.getSource();
-        const sValue = oDatePicker.getValue();
-
+        const oDP = oEvent.getSource();
+        const sValue = oDP.getValue();
         const aParts = sValue.split("/");
         if (aParts.length === 2) {
-          const sMonth = aParts[0].padStart(2, "0");
-          const sYear = aParts[1];
-
-          const sFormatted = `${sYear}/${sMonth}`;
-          oDatePicker.setDateValue(new Date(sFormatted));
-        } else {
-          oDatePicker.setValueState("Error");
-          oDatePicker.setValueStateText(
-            "Please enter month and year in MM/YYYY format."
-          );
+          const sMonth = aParts[0].trim();
+          const sYear = aParts[1].trim();
+          const iMonth = parseInt(sMonth, 10);
+          const iYear = parseInt(sYear, 10);
+          if (!isNaN(iMonth) && iMonth >= 1 && iMonth <= 12 && !isNaN(iYear)) {
+            const oDate = new Date(iYear, iMonth - 1, 1);
+            oDP.setDateValue(oDate);
+            oDP.setValueState("None");
+            return;
+          }
         }
       },
+
       onAddCategory: function () {
         const oProductModel = this.getView().getModel("product");
         if (!oProductModel) {
@@ -224,8 +341,9 @@ sap.ui.define(
         const oData = oProductModel.getData();
         oData.Categories = oData.Categories || [];
         oData.Categories.push({ ID: "", Name: "" });
-        oProductModel.setData(oData);
+        oProductModel.setProperty("/Categories", oData.Categories);
       },
+
       onDeleteCategory: function () {
         const oTable = this.byId("categoriesTable");
         const aSelectedItems = oTable.getSelectedItems();
@@ -241,24 +359,26 @@ sap.ui.define(
         }
         const aCategories = oProductModel.getProperty("/Categories");
 
+        // Compute indices from binding contexts
         const aIndices = aSelectedItems.map((oItem) =>
           parseInt(
-            oItem.getBindingContext("product").getPath().split("/").pop()
+            oItem.getBindingContext("product").getPath().split("/").pop(),
+            10
           )
         );
-
+        // Remove in descending index order
         aIndices.sort((a, b) => b - a);
         aIndices.forEach((i) => {
           if (!isNaN(i) && i >= 0 && i < aCategories.length) {
             aCategories.splice(i, 1);
           }
         });
-
         oProductModel.setProperty("/Categories", aCategories);
         oTable.removeSelections(true);
 
         MessageToast.show("Selected categories deleted.");
       },
+
       _discardNewProduct: function () {
         const oComponent = this.getOwnerComponent();
         oComponent.setModel(null, "newProduct");
@@ -266,6 +386,7 @@ sap.ui.define(
         const oViewModel = this.getView().getModel("viewModel");
         oViewModel.setProperty("/isNew", false);
         oViewModel.setProperty("/editable", false);
+        this._oOriginalData = null;
         this._oRouter.navTo("ProductsList");
       },
     });

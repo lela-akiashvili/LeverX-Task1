@@ -14,15 +14,6 @@ sap.ui.define([], function () {
         return oCat && oCat.Name ? oCat.Name : "";
       });
       return aNames.join(", ");
-    },
-    getCategoryKeys: function (aCategories) {
-      if (!Array.isArray(aCategories)) {
-        return [];
-      } 
-      return aCategories.map(function (oCat) {
-        // If Key is not string, convert:
-        return oCat.Key != null ? oCat.Key.toString() : "";
-      });
-    },
+    }
   };
 });
