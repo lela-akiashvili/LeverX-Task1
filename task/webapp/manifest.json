@@ -1,0 +1,107 @@
+{
+  "_version": "1.65.0",
+  "sap.app": {
+    "id": "task",
+    "type": "application",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "0.0.1"
+    },
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "resources": "resources.json",
+    "sourceTemplate": {
+      "id": "@sap/generator-fiori:basic",
+      "version": "1.18.0",
+      "toolsId": "854ecd2c-cddf-4b9c-add5-f014550e1b46"
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "icons": {
+      "icon": "",
+      "favIcon": "",
+      "phone": "",
+      "phone@2": "",
+      "tablet": "",
+      "tablet@2": ""
+    },
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "flexEnabled": false,
+    "dependencies": {
+      "minUI5Version": "1.136.1",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.f": {},
+        "sap.ui.comp": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "task.i18n.i18n"
+        }
+      }
+    },
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "controlAggregation": "pages",
+        "controlId": "app",
+        "transition": "slide",
+        "type": "View",
+        "viewType": "XML",
+        "path": "task.view",
+        "async": true
+      },
+      "routes": [
+        {
+          "pattern": "",
+          "name": "ProductsList",
+          "target": "ProductsList"
+        },
+        {
+          "pattern": "ProductDetails/{productId}",
+          "name": "ProductDetails",
+          "target": "ProductDetails"
+        }
+        
+      ],
+      "targets": {
+        "ProductsList": {
+          "name": "ProductsList",
+          "viewId": "ProductsList"
+        },
+        "ProductDetails": {
+          "name": "ProductDetails",
+          "viewId": "ProductDetails"
+        }
+      }
+    },
+    "rootView": {
+      "viewName": "task.view.App",
+      "type": "XML",
+      "id": "app",
+      "async": true
+    }
+  }
+}
