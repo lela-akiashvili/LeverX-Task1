@@ -186,14 +186,12 @@ sap.ui.define(
         const oValRel = oDDRRel ? oDDRRel.getValue() : null;
         const oValDisc = oDDRDisc ? oDDRDisc.getValue() : null;
         const aDateFilters = [];
-        const oFilterRel = this._createDateFilter("ReleaseDate", oValRel);
+        const oFilterRel = this.createDateFilter("ReleaseDate", oValRel);
+
         if (oFilterRel) {
           aDateFilters.push(oFilterRel);
         }
-        const oFilterDisc = this._createDateFilter(
-          "DiscontinuedDate",
-          oValDisc
-        );
+        const oFilterDisc = this.createDateFilter("DiscontinuedDate", oValDisc);
         if (oFilterDisc) {
           aDateFilters.push(oFilterDisc);
         }
@@ -314,95 +312,6 @@ sap.ui.define(
           oBinding.filter(oFinalFilter, FilterType.Application);
         } else {
           oBinding.filter([], FilterType.Application);
-        }
-      },
-
-      _createDateFilter: function (fieldName, oVal) {
-        if (!oVal || !oVal.operator) {
-          return null;
-        }
-        const op = oVal.operator;
-        const vals = oVal.values || [];
-        // Helpers for day boundaries
-        const startOfDay = (date) =>
-          new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const endOfDay = (date) => {
-          const d = new Date(
-            date.getFullYear(),
-            date.getMonth(),
-            date.getDate()
-          );
-          d.setDate(d.getDate() + 1);
-          d.setMilliseconds(d.getMilliseconds() - 1);
-          return d;
-        };
-        switch (op) {
-          case "DATE": {
-            const dateObj = vals[0];
-            if (!(dateObj instanceof Date)) return null;
-            return new Filter({
-              path: fieldName,
-              operator: FilterOperator.BT,
-              value1: startOfDay(dateObj),
-              value2: endOfDay(dateObj),
-            });
-          }
-          case "DATERANGE": {
-            const [dateStart, dateEnd] = vals;
-            if (!(dateStart instanceof Date) || !(dateEnd instanceof Date))
-              return null;
-            return new Filter({
-              path: fieldName,
-              operator: FilterOperator.BT,
-              value1: startOfDay(dateStart),
-              value2: endOfDay(dateEnd),
-            });
-          }
-          case "FROM": {
-            const dateObj = vals[0];
-            if (!(dateObj instanceof Date)) return null;
-            return new Filter(
-              fieldName,
-              FilterOperator.GE,
-              startOfDay(dateObj)
-            );
-          }
-          case "TO": {
-            const dateObj = vals[0];
-            if (!(dateObj instanceof Date)) return null;
-            return new Filter(fieldName, FilterOperator.LE, endOfDay(dateObj));
-          }
-          case "TODAY": {
-            const today = new Date();
-            return new Filter({
-              path: fieldName,
-              operator: FilterOperator.BT,
-              value1: startOfDay(today),
-              value2: endOfDay(today),
-            });
-          }
-          case "THISWEEK": {
-            const now = new Date();
-            const day = now.getDay();
-            const diffToMonday = (day + 6) % 7;
-            const weekStart = new Date(
-              now.getFullYear(),
-              now.getMonth(),
-              now.getDate() - diffToMonday
-            );
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 7);
-            weekEnd.setMilliseconds(weekEnd.getMilliseconds() - 1);
-            return new Filter({
-              path: fieldName,
-              operator: FilterOperator.BT,
-              value1: weekStart,
-              value2: weekEnd,
-            });
-          }
-          default:
-            console.warn("Operator not handled:", op);
-            return null;
         }
       },
 
