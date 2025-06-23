@@ -162,6 +162,66 @@ sap.ui.define(
       /**
        * Validate, persist to master model, then exit edit mode.
        */
+      // onSavePress: function () {
+      //   const oView = this.getView();
+      //   const oProductModel = oView.getModel("product");
+      //   const oViewModel = oView.getModel("viewModel");
+      //   const oData = oProductModel.getData();
+
+      //   // Clear previous messages
+      //   this._oMessageManager.removeAllMessages();
+
+      //   // Basic validation
+      //   if (!oData.Name || oData.Name.trim() === "") {
+      //     this._addMessage("Name is required", "/Name");
+      //     return;
+      //   }
+      //   if (!oData.Price || isNaN(oData.Price) || oData.Price <= 0) {
+      //     this._addMessage("Price must be greater than 0", "/Price");
+      //     return;
+      //   }
+      //   if (
+      //     oData.Rating != null &&
+      //     (isNaN(oData.Rating) || oData.Rating < 1 || oData.Rating > 5)
+      //   ) {
+      //     this._addMessage("Rating must be between 1 and 5", "/Rating");
+      //     return;
+      //   }
+      //   // Persist to master "products" JSONModel
+      //   const oMasterModel = this.getProductModel(); // via BaseController
+      //   const aProducts = oMasterModel.getProperty("/Products") || [];
+      //   const sId = oData.ID;
+
+      //   if (oViewModel.getProperty("/isNew")) {
+      //     // New product: add to master
+      //     aProducts.push(this._cloneProductPreserveDates(oData));
+      //     oMasterModel.setProperty("/Products", aProducts);
+      //     MessageToast.show("New product created.");
+
+      //     // Clear the newProduct model so _onMatched won't think it's still new
+      //     this.getOwnerComponent().setModel(null, "newProduct");
+
+      //     this.getRouter().navTo("ProductDetails", { productId: sId }, true);
+      //     return;
+      //   } else {
+      //     // Existing product: update in master
+      //     const iIndex = aProducts.findIndex((p) => p.ID === sId);
+      //     if (iIndex >= 0) {
+      //       aProducts[iIndex] = this._cloneProductPreserveDates(oData);
+      //       oMasterModel.setProperty("/Products", aProducts);
+      //       MessageToast.show("Saved successfully");
+      //     } else {
+      //       MessageToast.show("Could not find product to update");
+      //     }
+      //     // Exit edit mode
+      //     oViewModel.setProperty("/editable", false);
+      //     oViewModel.setProperty("/isNew", false);
+      //     this._oOriginalData = null;
+      //   }
+      // },
+
+      // // Cancel button - if new, discard; else revert to original data, then exit edit mode.
+
       onSavePress: function () {
         const oView = this.getView();
         const oProductModel = oView.getModel("product");
@@ -171,7 +231,6 @@ sap.ui.define(
         // Clear previous messages
         this._oMessageManager.removeAllMessages();
 
-        // Basic validation
         if (!oData.Name || oData.Name.trim() === "") {
           this._addMessage("Name is required", "/Name");
           return;
@@ -187,21 +246,32 @@ sap.ui.define(
           this._addMessage("Rating must be between 1 and 5", "/Rating");
           return;
         }
+
         // Persist to master "products" JSONModel
         const oMasterModel = this.getProductModel(); // via BaseController
         const aProducts = oMasterModel.getProperty("/Products") || [];
         const sId = oData.ID;
 
         if (oViewModel.getProperty("/isNew")) {
-          // New product: add to master
           aProducts.push(this._cloneProductPreserveDates(oData));
           oMasterModel.setProperty("/Products", aProducts);
           MessageToast.show("New product created.");
 
-          // Clear the newProduct model so _onMatched won't think it's still new
+          //remove "newProduct" model so _onMatched won't treat it as new
           this.getOwnerComponent().setModel(null, "newProduct");
 
-          this.getRouter().navTo("ProductDetails", { productId: sId }, true);
+          // new JSONModel for the now-saved product data
+          const oSavedDataClone = this._cloneProductPreserveDates(oData);
+          const oSavedProductModel = models.createProductModel(oSavedDataClone);
+          oView.setModel(oSavedProductModel, "product");
+
+          // update viewModel to read-only
+          oViewModel.setProperty("/editable", false);
+          oViewModel.setProperty("/isNew", false);
+
+          // Clear stored data
+          this._oOriginalData = null;
+
           return;
         } else {
           // Existing product: update in master
@@ -220,7 +290,6 @@ sap.ui.define(
         }
       },
 
-      // Cancel button - if new, discard; else revert to original data, then exit edit mode.
       onCancelPress: function () {
         const oView = this.getView();
         const oViewModel = oView.getModel("viewModel");
