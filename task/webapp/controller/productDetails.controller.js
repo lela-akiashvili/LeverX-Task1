@@ -47,18 +47,21 @@ sap.ui.define(
         const oViewModel = oView.getModel("viewModel");
         const oComponent = this.getOwnerComponent();
 
+        this._oMessageManager.removeAllMessages();
+
         // If there's a "newProduct" model in component and its ID matches, treat as new
         const oNewProdModel = oComponent.getModel("newProduct");
-        if (oNewProdModel && oNewProdModel.getProperty("/ID") === sProductId) {
-          // New product: go into edit mode directly
-          oView.setModel(oNewProdModel, "product");
-          oViewModel.setProperty("/editable", true);
-          oViewModel.setProperty("/isNew", true);
-          this._oMessageManager.removeAllMessages();
-
-          // a clone so Cancel can clear fields or revert
-          this._storeOriginalData(oNewProdModel.getData());
-          return;
+        if (oNewProdModel) {
+          const sNewModelId = oNewProdModel.getProperty("/ID");
+          if (sNewModelId === sProductId) {
+            // create a new product mode
+            oView.setModel(oNewProdModel, "product");
+            oViewModel.setProperty("/editable", true);
+            oViewModel.setProperty("/isNew", true);
+            // store snapshot for Cancel
+            this._storeOriginalData(oNewProdModel.getData());
+            return;
+          }
         }
 
         const oProductsModel = oComponent.getModel("products");
@@ -184,19 +187,27 @@ sap.ui.define(
           this._addMessage("Rating must be between 1 and 5", "/Rating");
           return;
         }
-        // Further validations (dates) can be added similarly.
-
         // Persist to master "products" JSONModel
-        const oMasterModel = this.getOwnerComponent().getModel("products");
+        const oComponent = this.getOwnerComponent();
+        const oMasterModel = oComponent.getModel("products");
         const aProducts = oMasterModel.getProperty("/Products") || [];
         const sId = oData.ID;
+
         if (oViewModel.getProperty("/isNew")) {
-          // New product: add to array
+          // New product: add to master
+          // Deep clone so we don't keep UI bindings
           aProducts.push(this._cloneProductPreserveDates(oData));
           oMasterModel.setProperty("/Products", aProducts);
           MessageToast.show("New product created.");
+
+          // Clear the newProduct model so _onMatched won't think it's still new
+          oComponent.setModel(null, "newProduct");
+
+          this._oRouter.navTo("ProductDetails", { productId: sId }, true);
+
+          return;
         } else {
-          // Existing: find index and replace
+          // Existing product: update in master
           const iIndex = aProducts.findIndex((p) => p.ID === sId);
           if (iIndex >= 0) {
             aProducts[iIndex] = this._cloneProductPreserveDates(oData);
@@ -205,14 +216,10 @@ sap.ui.define(
           } else {
             MessageToast.show("Could not find product to update");
           }
+          oViewModel.setProperty("/editable", false);
+          oViewModel.setProperty("/isNew", false);
+          this._oOriginalData = null;
         }
-
-        // Exit edit mode
-        oViewModel.setProperty("/editable", false);
-        oViewModel.setProperty("/isNew", false);
-
-        // Clear stored original data
-        this._oOriginalData = null;
       },
 
       // Cancel button - if new, discard; else revert to original data, then exit edit mode.
