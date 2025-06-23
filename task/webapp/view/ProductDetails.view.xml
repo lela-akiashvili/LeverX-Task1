@@ -1,0 +1,188 @@
+<mvc:View
+  controllerName="task.controller.ProductDetails"
+  xmlns="sap.uxap"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:m="sap.m"
+  xmlns:form="sap.ui.layout.form">
+
+  <ObjectPageLayout
+    id="ObjectPageLayout"
+    showFooter="{viewModel>/editable}" showHeaderContent="true" useIconTabBar="true"> 
+    <headerTitle>
+      <ObjectPageHeader objectTitle="{product>/Name}" objectSubtitle="{product>/ID}">
+        <breadcrumbs>
+          <m:Breadcrumbs>
+            <m:Link text="Home" press="onNavHome" />
+            <m:Link text="{product>/Name}" />
+          </m:Breadcrumbs>
+        </breadcrumbs>
+
+        <actions>
+          <ObjectPageHeaderActionButton
+            visible="{= !${viewModel>/editable} }"
+            text="Edit"
+            hideText="false"
+            press="onEditPress"
+            type="Emphasized" />
+
+          <ObjectPageHeaderActionButton
+            visible="{= !${viewModel>/editable} }"
+            icon="sap-icon://delete"
+            text="Delete"
+            hideText="false"
+            press="onDeletePress" />
+        </actions>
+      </ObjectPageHeader>
+    </headerTitle>
+
+    <sections>
+      <ObjectPageSection title="Product Info">
+        <subSections>
+          <ObjectPageSubSection title="Details">
+            <form:SimpleForm
+              editable="{viewModel>/editable}"
+              layout="ResponsiveGridLayout">
+              <form:content>
+                <m:Label text="Name" />
+                <m:Input
+                  value="{product>/Name}"
+                  required="true"
+                  editable="{viewModel>/editable}" />
+
+                <m:Label text="Description" />
+                <m:TextArea
+                  value="{product>/Description}"
+                  rows="3"
+                  editable="{viewModel>/editable}" />
+
+                <m:Label text="Release Date" />
+                <m:DatePicker
+                  id="releaseDatePicker"
+                  dateValue="{path: 'product>/ReleaseDate'}"
+                  displayFormat="MM/yyyy"
+                  placeholder="MM/YYYY"
+                  change="onDateChange"
+                  editable="{viewModel>/editable}" />
+
+                <m:Label text="Discontinue Date" />
+                <m:DatePicker
+                  id="discontinueDatePicker"
+                  dateValue="{path: 'product>/DiscontinuedDate'}"
+                  displayFormat="MM/yyyy"
+                  placeholder="MM/YYYY"
+                  change="onDateChange"
+                  editable="{viewModel>/editable}" />
+
+                <m:Label text="Price" />
+                <m:Input
+                  value="{product>/Price}"
+                  type="Number"
+                  required="true"
+                  editable="{viewModel>/editable}" />
+
+                <m:Label text="Rating" />
+                <m:Input
+                  value="{product>/Rating}"
+                  type="Number"
+                  required="true"
+                  placeholder="from 1 to 5"
+                  editable="{viewModel>/editable}" />
+              </form:content>
+            </form:SimpleForm>
+          </ObjectPageSubSection>
+
+          <ObjectPageSubSection title="Categories">
+            <m:Table
+              id="categoriesTable"
+              items="{product>/Categories}"
+              mode="{= ${viewModel>/editable} ? 'MultiSelect' : 'None'}">
+              <m:columns>
+                <m:Column>
+                  <m:Text text="ID" />
+                </m:Column>
+                <m:Column>
+                  <m:Text text="Name" />
+                </m:Column>
+              </m:columns>
+              <m:items>
+                <m:ColumnListItem>
+                  <m:cells>
+                    <!-- Cell for ID: wrap Input+Text in one container -->
+                    <m:HBox>
+                      <!-- Editing: Input visible only when editable=true -->
+                      <m:Input
+                        value="{product>ID}"
+                        editable="{viewModel>/editable}"
+                        visible="{viewModel>/editable}" />
+                      <!-- Read-only: Text visible only when editable=false -->
+                      <m:Text
+                        text="{product>ID}"
+                        visible="{= !${viewModel>/editable} }" />
+                    </m:HBox>
+
+                    <!-- Cell for Name: similarly wrap -->
+                    <m:HBox>
+                      <m:Input
+                        value="{product>Name}"
+                        editable="{viewModel>/editable}"
+                        visible="{viewModel>/editable}" />
+                      <m:Text
+                        text="{product>Name}"
+                        visible="{= !${viewModel>/editable} }" />
+                    </m:HBox>
+                  </m:cells>
+                </m:ColumnListItem>
+              </m:items>
+            </m:Table>
+            <m:Toolbar>
+              <m:ToolbarSpacer />
+              <m:Button
+                text="Add"
+                icon="sap-icon://add"
+                press="onAddCategory"
+                visible="{viewModel>/editable}" />
+              <m:Button
+                text="Delete"
+                icon="sap-icon://delete"
+                press="onDeleteCategory"
+                visible="{viewModel>/editable}" />
+            </m:Toolbar>
+          </ObjectPageSubSection>
+
+          <ObjectPageSubSection title="Supplier Info">
+            <form:SimpleForm
+              editable="{viewModel>/editable}"
+              layout="ResponsiveGridLayout">
+              <form:content>
+                <m:Label text="Supplier Name" />
+                <m:Input
+                  value="{product>/Supplier/Name}"
+                  editable="{viewModel>/editable}" />
+
+                <m:Label text="Address" />
+                <m:Input
+                  value="{product>/Supplier/Address}"
+                  editable="{viewModel>/editable}" />
+              </form:content>
+            </form:SimpleForm>
+          </ObjectPageSubSection>
+        </subSections>
+      </ObjectPageSection>
+    </sections>
+
+    <footer>
+      <m:Toolbar>
+        <m:ToolbarSpacer />
+        <m:Button
+          text="Save"
+          type="Emphasized"
+          press="onSavePress"
+          visible="{viewModel>/editable}" />
+        <m:Button
+          text="Cancel"
+          press="onCancelPress"
+          visible="{viewModel>/editable}" />
+      </m:Toolbar>
+    </footer>
+  </ObjectPageLayout>
+</mvc:View>
