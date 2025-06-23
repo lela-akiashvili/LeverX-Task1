@@ -7,51 +7,45 @@ sap.ui.define(
     "use strict";
 
     return Controller.extend("task.BaseController", {
-
+      /**
+       * Initialize global models on the Component.
+       * Call this from child controllers in onInit via this.onInitBase().
+       */
       initModels: function () {
         const oComponent = this.getOwnerComponent();
 
-        // Product model
         if (!oComponent.getModel("products")) {
-          const oProductModel = models.getProductModel();
-          oComponent.setModel(oProductModel, "products");
+
+          if (models.getProductModel) {
+            const oProductModel = models.getProductModel();
+            oComponent.setModel(oProductModel, "products");
+          }
         }
-        // Config model
-        // if (!oComponent.getModel("config")) {
-        //   const oConfigModel = models.createConfigModel();
-        //   oComponent.setModel(oConfigModel, "config");
-        // }
+      
       },
 
       /**
-       * Convenience: get the products JSONModel
-       * @returns {sap.ui.model.json.JSONModel}
+       * Convenience: get the products JSONModel from Component
+       * @returns {sap.ui.model.Model}
        */
       getProductModel: function () {
         return this.getOwnerComponent().getModel("products");
       },
 
       /**
-       * Convenience: get the config JSONModel
-       * @returns {sap.ui.model.json.JSONModel}
+       * Convenience: get the router
+       * @returns {sap.ui.core.routing.Router}
        */
-      // getConfigModel: function () {
-      //   return this.getOwnerComponent().getModel("config");
-      // },
 
-      /**
-       * Convenience: get the router from Component
-       * @returns {sap.ui.core.UIComponent.getRouter()}
-       */
       getRouter: function () {
         return this.getOwnerComponent().getRouter();
       },
 
       /**
-       * set a model on the view or on component. By default sets on view unless bGlobal=true.
+       * Convenience to set a model on view (default) or globally on component.
        * @param {sap.ui.model.Model} oModel
        * @param {string} sName
-       * @param {boolean} [bGlobal]  if true, set on component; otherwise on view
+       * @param {boolean} [bGlobal=false] if true: component, else: view
        */
       setModel: function (oModel, sName, bGlobal) {
         if (bGlobal) {
@@ -62,9 +56,10 @@ sap.ui.define(
       },
 
       /**
-       * get a named model from view or global
+       * Convenience to get a named model from view (default) or component.
        * @param {string} sName
-       * @param {boolean} [bGlobal]
+       * @param {boolean} [bGlobal=false]
+       * @returns {sap.ui.model.Model}
        */
       getModel: function (sName, bGlobal) {
         if (bGlobal) {
@@ -73,10 +68,15 @@ sap.ui.define(
           return this.getView().getModel(sName);
         }
       },
-      
+
+      /**
+       * Call this in child controllers' onInit() to run base initialization.
+       */
       onInitBase: function () {
         this.initModels();
       },
+
+      // You can add more shared methods here, e.g. common error handlers, navigation shortcuts, etc.
     });
   }
 );

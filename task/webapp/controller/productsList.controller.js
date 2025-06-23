@@ -1,6 +1,6 @@
 sap.ui.define(
   [
-    "sap/ui/core/mvc/Controller",
+    "task/BaseController.controller",
     "task/utils/formatter",
     "sap/m/MessageToast",
     "sap/m/MessageBox",
@@ -12,7 +12,7 @@ sap.ui.define(
     "sap/ui/comp/library",
   ],
   function (
-    Controller,
+    BaseController,
     formatter,
     MessageToast,
     MessageBox,
@@ -25,15 +25,17 @@ sap.ui.define(
   ) {
     "use strict";
 
-    return Controller.extend("task.controller.ProductsList", {
+    return BaseController.extend("task.controller.ProductsList", {
       formatter: formatter,
 
       onInit: function () {
-        this._oRouter = this.getOwnerComponent().getRouter();
+        this.onInitBase();
 
+        // Set up filter bar clear handler
         const oFilterBar = this.byId("filterBar");
         oFilterBar.attachClear(this.onFilterClear, this);
 
+        // Multiple Conditions Input
         this._oMultipleConditionsInput = this.byId("supplierInput");
         if (this._oMultipleConditionsInput) {
           this._oMultipleConditionsInput.setTokens([]);
@@ -48,10 +50,13 @@ sap.ui.define(
 
       onFilterSearch: function (oEvent) {
         let sQuery = "";
-        const sParamQuery = oEvent.getParameter("query");
-        if (sParamQuery !== undefined) {
-          sQuery = sParamQuery;
-        } else {
+        if (oEvent && typeof oEvent.getParameter === "function") {
+          const sParamQuery = oEvent.getParameter("query");
+          if (sParamQuery !== undefined) {
+            sQuery = sParamQuery;
+          }
+        }
+        if (!sQuery) {
           const oSearchField = this.byId("generalSearchField");
           if (oSearchField) {
             sQuery = oSearchField.getValue();
@@ -77,6 +82,7 @@ sap.ui.define(
           if (typeof oDDRRel.removeAllTokens === "function") {
             oDDRRel.removeAllTokens();
           } else if (typeof oDDRRel.setValue === "function") {
+            // If it's a different control
             oDDRRel.setValue({});
           }
         }
@@ -90,7 +96,7 @@ sap.ui.define(
           }
         }
         // Clear MultiComboBox categories
-        const oCategoryMCB = this.byId("categoryFilter"); // use exact ID
+        const oCategoryMCB = this.byId("categoryFilter");
         if (
           oCategoryMCB &&
           typeof oCategoryMCB.setSelectedKeys === "function"
@@ -101,13 +107,14 @@ sap.ui.define(
         if (this._oMultipleConditionsInput) {
           this._oMultipleConditionsInput.setTokens([]);
         }
-        // Clear all filters
+        // Reapply filters with empty query
         this._applyAllFilters("");
       },
 
       onReleaseDateChange: function () {
         this._applyAllFilters();
       },
+
       onDiscontinuedDateChange: function () {
         this._applyAllFilters();
       },
@@ -129,7 +136,6 @@ sap.ui.define(
 
         // General free-text search
         if (sQuery === undefined) {
-          // Read from SearchField if not passed in
           const oSearchField = oView.byId("generalSearchField");
           sQuery = oSearchField ? oSearchField.getValue() : "";
         }
@@ -142,7 +148,7 @@ sap.ui.define(
             new Filter("Supplier/Name", FilterOperator.Contains, sQueryLower),
             new Filter({
               path: "Categories",
-              // since Categories is an array
+              // Categories is an array so - test function
               test: function (aCategories) {
                 if (!Array.isArray(aCategories)) {
                   return false;
@@ -201,6 +207,7 @@ sap.ui.define(
           });
         }
 
+        // Category filter via MultiComboBox
         let oCategoryFilter = null;
         const oCategoryMCB = oView.byId("categoryFilter");
         if (oCategoryMCB) {
@@ -212,7 +219,6 @@ sap.ui.define(
                 if (!Array.isArray(aCategories)) {
                   return false;
                 }
-                // Return true if any category object’s ID is in selected keys
                 return aCategories.some(function (oCat) {
                   return oCat && aSelectedKeys.indexOf(oCat.ID) !== -1;
                 });
@@ -220,6 +226,7 @@ sap.ui.define(
             });
           }
         }
+
         // Supplier Name conditions from ValueHelpDialog tokens
         let oSupplierFilter = null;
         const aTokens = this._oMultipleConditionsInput
@@ -232,13 +239,12 @@ sap.ui.define(
               if (!oRange) {
                 return null;
               }
-              //  only keyField - "Name"
+              // Only keyField "Name" for Supplier
               if (oRange.keyField !== "Name") {
                 return null;
               }
               const sOp = oRange.operation;
               const v1 = oRange.value1;
-              // Map ValueHelpRangeOperation to Filter on "Supplier/Name"
               switch (sOp) {
                 case compLibrary
                   .valuehelpdialog.ValueHelpRangeOperation.Contains:
@@ -274,12 +280,12 @@ sap.ui.define(
           if (aRangeFilters.length === 1) {
             oSupplierFilter = aRangeFilters[0];
           } else if (aRangeFilters.length > 1) {
-            // Combine multiple conditions with AND semantics:
+            // Combine multiple with AND
             oSupplierFilter = new Filter({ filters: aRangeFilters, and: true });
           }
         }
 
-        //Combine all filters with AND semantics
+        // Combine all filters with AND semantics
         const aAllFilters = [];
         if (oGeneralFilter) {
           aAllFilters.push(oGeneralFilter);
@@ -317,7 +323,7 @@ sap.ui.define(
         }
         const op = oVal.operator;
         const vals = oVal.values || [];
-        // Helpers
+        // Helpers for day boundaries
         const startOfDay = (date) =>
           new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const endOfDay = (date) => {
@@ -403,10 +409,12 @@ sap.ui.define(
       // Navigate on row press
       onRowPress: function (oEvent) {
         const oCtx = oEvent.getSource().getBindingContext("products");
-        const sProductID = oCtx.getProperty("ID");
-        this._oRouter.navTo("ProductDetails", {
-          productId: sProductID,
-        });
+        if (oCtx) {
+          const sProductID = oCtx.getProperty("ID");
+          this.getRouter().navTo("ProductDetails", {
+            productId: sProductID,
+          });
+        }
       },
 
       onSelectionChange: function (oEvent) {
@@ -415,7 +423,9 @@ sap.ui.define(
         const bHasSelections = aSelectedItems.length > 0;
 
         const oDeleteBtn = this.byId("deleteButton");
-        oDeleteBtn.setEnabled(bHasSelections);
+        if (oDeleteBtn) {
+          oDeleteBtn.setEnabled(bHasSelections);
+        }
       },
 
       onDelete: function () {
@@ -467,7 +477,7 @@ sap.ui.define(
         });
         oModel.setProperty("/Products", aRemaining);
 
-        // Also update FilteredProducts: reapply filters
+        // Reapply filters
         this.onFilterSearch();
 
         const oTable = this.byId("productsTable");
@@ -489,14 +499,13 @@ sap.ui.define(
         const sNewId = "P" + Date.now();
         const oNewProdModel = models.createNewProductData(sNewId);
         this.getOwnerComponent().setModel(oNewProdModel, "newProduct");
-        this._oRouter.navTo("ProductDetails", {
+        this.getRouter().navTo("ProductDetails", {
           productId: sNewId,
         });
       },
 
       onVHRequested: function () {
         if (!this._oSupplierVHD) {
-          // Load the fragment once
           this.loadFragment({
             name: "task.view.fragments.ValueHelpDialog",
           }).then(
@@ -522,7 +531,6 @@ sap.ui.define(
             }.bind(this)
           );
         } else {
-          // Reuse existing dialog
           const aExisting = this._oMultipleConditionsInput.getTokens() || [];
           this._oSupplierVHD.setTokens(aExisting);
           this._oSupplierVHD.open();
@@ -531,12 +539,7 @@ sap.ui.define(
 
       onValueHelpOkPress: function (oEvent) {
         const aTokens = oEvent.getParameter("tokens") || [];
-
         this._oMultipleConditionsInput.setTokens(aTokens);
-
-        // Store tokens for filter logic
-        // this._aSupplierRangeTokens = aTokens.slice();
-        this._oMultipleConditionsInput.getTokens();
         this._applyAllFilters();
         this._oSupplierVHD.close();
       },
