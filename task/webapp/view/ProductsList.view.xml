@@ -94,10 +94,12 @@
                 visibleInFilterBar="true">
                 <filterBar:control>
                   <MultiInput
+                    submit="onSupplierInputSubmit"
                     id="supplierInput"
                     valueHelpRequest=".onVHRequested"
                     placeholder="Filter by supplier"
                     showClearIcon="true"
+                    tokenUpdate="onSupplierTokenUpdate"
                   />
                 </filterBar:control>
               </filterBar:FilterGroupItem>
@@ -111,10 +113,12 @@
                     selectionChange="handleSelectionChange"
                     selectionFinish="handleSelectionFinish"
                     placeholder="Select categories">
-                    <core:Item key="C02" text="Category 2" />
-                    <core:Item key="C01" text="Category 1" />
+                    <core:Item key="C02" text="Category 1" />
+                    <core:Item key="C01" text="Category 2" />
+                    <core:Item key="C01" text="Category 3" />
                     <core:Item key="C04" text="Category 4" />
                     <core:Item key="C05" text="Category 5" />
+                    <core:Item key="C05" text="Category 6" />
                   </MultiComboBox>
                 </filterBar:control>
               </filterBar:FilterGroupItem>
@@ -135,10 +139,12 @@
         items="{products>/Products}"
         growing="true"
         growingThreshold="20"
+        updateFinished="onProductsTableUpdateFinished"
       >
         <headerToolbar>
           <Toolbar>
-            <Title text="Products" level="H2" />
+            <Title text="{= 'Products (' + ${viewModel>/productCount} + ')'}"
+              level="H2" />
             <ToolbarSpacer />
             <Button
               text="New Product"

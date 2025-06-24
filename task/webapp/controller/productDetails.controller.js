@@ -1,6 +1,6 @@
 sap.ui.define(
   [
-    "task/BaseController.controller",
+    "task/controller/BaseController.controller",
     "sap/m/MessageToast",
     "sap/ui/core/message/Message",
     "sap/ui/core/library",
@@ -19,6 +19,8 @@ sap.ui.define(
     const MessageType = coreLibrary.MessageType;
 
     return BaseController.extend("task.controller.ProductDetails", {
+      PRODUCTTABLE_ID: "categoriesTable",
+
       onInit: function () {
         this.onInitBase();
 
@@ -28,7 +30,7 @@ sap.ui.define(
 
         // View model to hold editable/isNew flags
         const oViewModel = models.createViewModel();
-        this.getView().setModel(oViewModel, "viewModel");
+        this.setModel(oViewModel, "viewModel");
 
         // Attach route match using router from BaseController
         this.getRouter()
@@ -142,7 +144,7 @@ sap.ui.define(
       },
 
       onNavHome: function () {
-        const oViewModel = this.getView().getModel("viewModel");
+        const oViewModel = this.getModel("viewModel");
         if (oViewModel.getProperty("/isNew")) {
           this._discardNewProduct();
         }
@@ -150,78 +152,14 @@ sap.ui.define(
       },
 
       onEditPress: function () {
-        const oViewModel = this.getView().getModel("viewModel");
+        const oViewModel = this.getModel("viewModel");
         oViewModel.setProperty("/editable", true);
         this._oMessageManager.removeAllMessages();
 
         // Store original data for Cancel.
-        const oCurrentData = this.getView().getModel("product").getData();
+        const oCurrentData = this.getModel("product").getData();
         this._storeOriginalData(oCurrentData);
       },
-
-      /**
-       * Validate, persist to master model, then exit edit mode.
-       */
-      // onSavePress: function () {
-      //   const oView = this.getView();
-      //   const oProductModel = oView.getModel("product");
-      //   const oViewModel = oView.getModel("viewModel");
-      //   const oData = oProductModel.getData();
-
-      //   // Clear previous messages
-      //   this._oMessageManager.removeAllMessages();
-
-      //   // Basic validation
-      //   if (!oData.Name || oData.Name.trim() === "") {
-      //     this._addMessage("Name is required", "/Name");
-      //     return;
-      //   }
-      //   if (!oData.Price || isNaN(oData.Price) || oData.Price <= 0) {
-      //     this._addMessage("Price must be greater than 0", "/Price");
-      //     return;
-      //   }
-      //   if (
-      //     oData.Rating != null &&
-      //     (isNaN(oData.Rating) || oData.Rating < 1 || oData.Rating > 5)
-      //   ) {
-      //     this._addMessage("Rating must be between 1 and 5", "/Rating");
-      //     return;
-      //   }
-      //   // Persist to master "products" JSONModel
-      //   const oMasterModel = this.getProductModel(); // via BaseController
-      //   const aProducts = oMasterModel.getProperty("/Products") || [];
-      //   const sId = oData.ID;
-
-      //   if (oViewModel.getProperty("/isNew")) {
-      //     // New product: add to master
-      //     aProducts.push(this._cloneProductPreserveDates(oData));
-      //     oMasterModel.setProperty("/Products", aProducts);
-      //     MessageToast.show("New product created.");
-
-      //     // Clear the newProduct model so _onMatched won't think it's still new
-      //     this.getOwnerComponent().setModel(null, "newProduct");
-
-      //     this.getRouter().navTo("ProductDetails", { productId: sId }, true);
-      //     return;
-      //   } else {
-      //     // Existing product: update in master
-      //     const iIndex = aProducts.findIndex((p) => p.ID === sId);
-      //     if (iIndex >= 0) {
-      //       aProducts[iIndex] = this._cloneProductPreserveDates(oData);
-      //       oMasterModel.setProperty("/Products", aProducts);
-      //       MessageToast.show("Saved successfully");
-      //     } else {
-      //       MessageToast.show("Could not find product to update");
-      //     }
-      //     // Exit edit mode
-      //     oViewModel.setProperty("/editable", false);
-      //     oViewModel.setProperty("/isNew", false);
-      //     this._oOriginalData = null;
-      //   }
-      // },
-
-      // // Cancel button - if new, discard; else revert to original data, then exit edit mode.
-
       onSavePress: function () {
         const oView = this.getView();
         const oProductModel = oView.getModel("product");
@@ -230,25 +168,38 @@ sap.ui.define(
 
         // Clear previous messages
         this._oMessageManager.removeAllMessages();
+        const aErrors = [];
 
         if (!oData.Name || oData.Name.trim() === "") {
-          this._addMessage("Name is required", "/Name");
-          return;
+          aErrors.push({ message: "Name is required", path: "/Name" });
         }
-        if (!oData.Price || isNaN(oData.Price) || oData.Price <= 0) {
-          this._addMessage("Price must be greater than 0", "/Price");
-          return;
+
+        if (oData.Price == null || isNaN(oData.Price) || oData.Price <= 0) {
+          aErrors.push({
+            message: "Price must be a number greater than 0",
+            path: "/Price",
+          });
         }
+
         if (
-          oData.Rating != null &&
-          (isNaN(oData.Rating) || oData.Rating < 1 || oData.Rating > 5)
+          oData.Rating == null ||
+          isNaN(oData.Rating) ||
+          oData.Rating < 1 ||
+          oData.Rating > 5
         ) {
-          this._addMessage("Rating must be between 1 and 5", "/Rating");
+          aErrors.push({
+            message: "Rating must be a number between 1 and 5",
+            path: "/Rating",
+          });
+        }
+        if (aErrors.length > 0) {
+          aErrors.forEach((err) => {
+            this._addMessage(err.message, err.path);
+          });
           return;
         }
 
-        // Persist to master "products" JSONModel
-        const oMasterModel = this.getProductModel(); // via BaseController
+        const oMasterModel = this.getProductModel();
         const aProducts = oMasterModel.getProperty("/Products") || [];
         const sId = oData.ID;
 
@@ -306,7 +257,7 @@ sap.ui.define(
             oView.setModel(oProductModel, "product");
           } else {
             // Fallback: reload from master list
-            const oData = this.getView().getModel("product").getData();
+            const oData = this.getModel("product").getData();
             const sId = oData.ID;
             const oMasterModel = this.getProductModel();
             const aProducts = oMasterModel.getProperty("/Products") || [];
@@ -314,7 +265,7 @@ sap.ui.define(
             if (oOrig) {
               const oCloned = this._cloneProductPreserveDates(oOrig);
               const oProductModel = models.createProductModel(oCloned);
-              this.getView().setModel(oProductModel, "product");
+              this.setModel(oProductModel, "product");
             }
           }
           // Exit edit mode
@@ -331,7 +282,7 @@ sap.ui.define(
             message: sMsg,
             type: MessageType.Error,
             target: sTargetPath,
-            processor: this.getView().getModel("product"),
+            processor: this.getModel("product"),
           })
         );
       },
@@ -340,7 +291,7 @@ sap.ui.define(
        * Delete button pressed - confirm then delete.
        */
       onDeletePress: function () {
-        const oProductModel = this.getView().getModel("product");
+        const oProductModel = this.getModel("product");
         if (!oProductModel) {
           MessageToast.show("No product loaded");
           return;
@@ -377,7 +328,7 @@ sap.ui.define(
           MessageToast.show("Could not delete product");
         }
 
-        const oViewModel = this.getView().getModel("viewModel");
+        const oViewModel = this.getModel("viewModel");
         if (oViewModel.getProperty("/isNew")) {
           this._discardNewProduct();
         }
@@ -406,7 +357,7 @@ sap.ui.define(
       },
 
       onAddCategory: function () {
-        const oProductModel = this.getView().getModel("product");
+        const oProductModel = this.getModel("product");
         if (!oProductModel) {
           MessageToast.show("No product loaded");
           return;
@@ -418,14 +369,14 @@ sap.ui.define(
       },
 
       onDeleteCategory: function () {
-        const oTable = this.byId("categoriesTable");
+        const oTable = this.byId(PRODUCTTABLE_ID);
         const aSelectedItems = oTable.getSelectedItems();
 
         if (aSelectedItems.length === 0) {
           MessageToast.show("Please select at least one category to delete.");
           return;
         }
-        const oProductModel = this.getView().getModel("product");
+        const oProductModel = this.getModel("product");
         if (!oProductModel) {
           MessageToast.show("No product loaded.");
           return;
@@ -453,12 +404,13 @@ sap.ui.define(
       },
 
       _discardNewProduct: function () {
-        const oComponent = this.getOwnerComponent();
-        oComponent.setModel(null, "newProduct");
-        this.getView().setModel(null, "product");
-        const oViewModel = this.getView().getModel("viewModel");
-        oViewModel.setProperty("/isNew", false);
-        oViewModel.setProperty("/editable", false);
+        this.setModel(null, "newProduct", true);
+        this.setModel(null, "product");
+        const oViewModel = this.getModel("viewModel");
+        if (oViewModel) {
+          oViewModel.setProperty("/isNew", false);
+          oViewModel.setProperty("/editable", false);
+        }
         this._oOriginalData = null;
         this.getRouter().navTo("ProductsList");
       },

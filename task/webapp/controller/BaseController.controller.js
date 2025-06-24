@@ -2,10 +2,11 @@ sap.ui.define(
   [
     "sap/ui/core/mvc/Controller",
     "task/model/models",
+    "sap/ui/model/FilterType",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
   ],
-  function (Controller, models, Filter, FilterOperator) {
+  function (Controller, models, FilterType, Filter, FilterOperator) {
     "use strict";
 
     return Controller.extend("task.BaseController", {
@@ -24,6 +25,26 @@ sap.ui.define(
         }
       },
 
+      /**
+       * Convenience method to get the resource bundle of the i18n model.
+       * @returns {sap.ui.model.resource.ResourceBundle} the resource bundle
+       */
+      getResourceBundle: function () {
+        const oComponent = this.getOwnerComponent();
+        return oComponent.getModel("i18n").getResourceBundle();
+      },
+
+      /**
+       * Convenience method to get a translated text by key, with optional parameters.
+       * @param {string} sKey - i18n key
+       * @param {Array} [aArgs] - optional array of arguments for placeholders {0}, {1}, ...
+       * @returns {string} the localized text
+       */
+      getText: function (sKey, aArgs) {
+        const oBundle = this.getResourceBundle();
+        return oBundle.getText(sKey, aArgs);
+      },
+      
       /**
        * Convenience: get the products JSONModel from Component
        * @returns {sap.ui.model.Model}
@@ -815,6 +836,63 @@ sap.ui.define(
             return null;
         }
       },
+
+      clearFields: function (aFieldIds) {
+        const oView = this.getView();
+        aFieldIds.forEach(function (sId) {
+          const oControl = oView.byId(sId);
+          if (!oControl) {
+            return;
+          }
+          if (oControl.isA && oControl.isA("sap.m.DynamicDateRange")) {
+            // Clear tokens
+            if (typeof oControl.removeAllTokens === "function") {
+              oControl.removeAllTokens();
+            } else {
+              oControl.setValue({});
+            }
+          } else if (typeof oControl.removeAllTokens === "function") {
+            oControl.removeAllTokens();
+          } else if (typeof oControl.setSelectedKeys === "function") {
+            // MultiComboBox
+            oControl.setSelectedKeys([]);
+          } else if (typeof oControl.setValue === "function") {
+            // Standard Input-like control
+            oControl.setValue("");
+          }
+        });
+        if (
+          this._oMultipleConditionsInput &&
+          typeof this._oMultipleConditionsInput.setTokens === "function"
+        ) {
+          this._oMultipleConditionsInput.setTokens([]);
+        }
+      },
+
+      // Generic helper to combine AND filters
+      combineFiltersAnd: function (aFilters) {
+        if (!Array.isArray(aFilters) || aFilters.length === 0) {
+          return null;
+        }
+        if (aFilters.length === 1) {
+          return aFilters[0];
+        }
+        return new Filter({ filters: aFilters, and: true });
+      },
+
+      // aapply to binding
+      applyFiltersToBinding: function (oBinding, aFilters) {
+        if (!oBinding) {
+          return;
+        }
+        const oFinalFilter = this.combineFiltersAnd(aFilters);
+        if (oFinalFilter) {
+          oBinding.filter(oFinalFilter, FilterType.Application);
+        } else {
+          oBinding.filter([], FilterType.Application);
+        }
+      },
+      
     });
   }
 );
