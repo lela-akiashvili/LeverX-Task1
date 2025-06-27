@@ -4,20 +4,21 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns:m="sap.m"
   xmlns:form="sap.ui.layout.form"
->
+  xmlns:smartForm="sap.ui.comp.smartform"
+  xmlns:smartField="sap.ui.comp.smartfield">
 
   <ObjectPageLayout
     id="ObjectPageLayout"
     showFooter="{viewModel>/editable}" showHeaderContent="true" useIconTabBar="true">
     <headerTitle>
-      <ObjectPageHeader objectTitle="{product>/Name}" objectSubtitle="{product>/ID}">
+      <ObjectPageHeader objectTitle="{Name}" objectSubtitle="{ID}">
         <breadcrumbs>
           <m:Breadcrumbs>
             <m:Link text="Home" press="onNavHome" />
-            <m:Link text="{product>/Name}" />
+            <m:Link text="{Name}" />
           </m:Breadcrumbs>
         </breadcrumbs>
-
+        <!-- 
         <actions>
           <ObjectPageHeaderActionButton
             visible="{= !${viewModel>/editable} }"
@@ -32,190 +33,134 @@
             text="Delete"
             hideText="false"
             press="onDeletePress" />
-        </actions>
+        </actions> -->
       </ObjectPageHeader>
     </headerTitle>
 
     <sections>
-      <ObjectPageSection title="Product Info">
+      <ObjectPageSection title=" Info">
         <subSections>
           <ObjectPageSubSection title="Details">
-            <form:SimpleForm
-              editable="{viewModel>/editable}"
-              layout="ResponsiveGridLayout">
-              <form:content>
-                <m:Label text="Name" required="{viewModel>/editable}"
-                />
-                <m:HBox>
-                  <m:Input
-                    value="{product>/Name}"
-                    required="true"
-                    valueStateText="Price must be a number greater than 0."
-                    visible="{viewModel>/editable}" />
-                  <m:Text text="{product>/Name}"
-                    visible="{= !${viewModel>/editable} }" />
-                </m:HBox>
+            <smartForm:SmartForm
+              id="productSmartForm"
+              entityType="ODataDemo.Product"
+              editTogglable="true" editToggled="handleEditToggled"
+              validationMode="Async"
+              title="Product"
+            >
 
-                <m:Label text="Description" />
-                <m:HBox>
-                  <m:TextArea cols="50"
-                    value="{product>/Description}"
-                    rows="3"
-                    visible="{viewModel>/editable}" />
-                  <m:Text text="{product>/Description}"
-                    visible="{= !${viewModel>/editable} }" />
-                </m:HBox>
+              <smartForm:groups>
+                <smartForm:Group>
+                  <smartForm:groupElements>
 
-                <m:Label text="Release Date" />
-                <m:HBox>
-                  <m:DatePicker
-                    id="releaseDatePicker"
-                    dateValue="{path: 'product>/ReleaseDate'}"
-                    displayFormat="MM/yyyy"
-                    placeholder="MM/YYYY"
-                    change="onDateChange"
-                    visible="{viewModel>/editable}" />
-                  <m:Text
-                    text="{ path: 'product>/ReleaseDate',
-                 type: 'sap.ui.model.type.Date',
-                 formatOptions: { pattern: 'MM/yyyy' }}"
-                    visible="{= !${viewModel>/editable} }" />
-                </m:HBox>
+                    <!-- Name -->
+                    <smartForm:GroupElement label="Name">
+                      <smartField:SmartField
+                        value="{Name}" />
+                    </smartForm:GroupElement>
 
-                <m:Label text="Discontinue Date" />
-                <m:HBox>
-                  <m:DatePicker
-                    id="discontinueDatePicker"
-                    dateValue="{path: 'product>/DiscontinuedDate'}"
-                    displayFormat="MM/yyyy"
-                    placeholder="MM/YYYY"
-                    change="onDateChange"
-                    visible="{viewModel>/editable}" />
-                  <m:Text
-                    text="{ path: 'product>/DiscontinuedDate',
-                 type: 'sap.ui.model.type.Date',
-                 formatOptions: { pattern: 'MM/yyyy' }}"
-                    visible="{= !${viewModel>/editable} }" />
-                </m:HBox>
+                    <!-- Description -->
+                    <smartForm:GroupElement label="Description">
+                      <smartField:SmartField
+                        value="{Description}" />
+                    </smartForm:GroupElement>
 
-                <m:Label text="Price" required="{viewModel>/editable}"
-                />
-                <m:HBox>
-                  <m:Input
-                    valueStateText="Price must be a number greater than 0."
-                    value="{product>/Price}"
-                    type="Number"
-                    required="true"
-                    visible="{viewModel>/editable}" />
-                  <m:Text text="{product>/Price}$"
-                    visible="{= !${viewModel>/editable} }" />
-                </m:HBox>
+                    <!-- ReleaseDate -->
+                    <smartForm:GroupElement label="Release Date">
+                      <smartField:SmartField
+                        value="{ReleaseDate}" />
+                    </smartForm:GroupElement>
 
-                <m:Label text="Rating" required="{viewModel>/editable}"
-                />
-                <m:HBox>
-                  <m:Input
-                    value="{product>/Rating}"
-                    type="Number"
-                    valueStateText="Rating must be a number between 1 and 5."
-                    required="true"
-                    id="ratingInput"
-                    placeholder="from 1 to 5"
-                    visible="{viewModel>/editable}" />
-                  <m:RatingIndicator displayOnly="true" value="{product>/Rating}" iconSize="1rem"
-                    visible="{= !${viewModel>/editable} }" />
-                </m:HBox>
-              </form:content>
-            </form:SimpleForm>
+                    <!-- DiscontinuedDate -->
+                    <smartForm:GroupElement label="Discontinued Date">
+                      <smartField:SmartField
+                        value="{DiscontinuedDate}" />
+                    </smartForm:GroupElement>
+
+                    <!-- Price -->
+                    <smartForm:GroupElement label="Price">
+                      <smartField:SmartField
+                        value="{Price}" />
+                    </smartForm:GroupElement>
+
+                    <!-- Rating -->
+                    <smartForm:GroupElement label="Rating">
+                      <smartField:SmartField
+                        value="{Rating}" />
+                    </smartForm:GroupElement>
+
+                  </smartForm:groupElements>
+                </smartForm:Group>
+              </smartForm:groups>
+            </smartForm:SmartForm>
           </ObjectPageSubSection>
 
-          <ObjectPageSubSection title="Categories">
-            <m:Table
-              id="categoriesTable"
-              items="{product>/Categories}"
-              mode="{= ${viewModel>/editable} ? 'MultiSelect' : 'None'}">
-              <m:columns>
-                <m:Column>
-                  <m:Text text="ID" />
-                </m:Column>
-                <m:Column>
-                  <m:Text text="Name" />
-                </m:Column>
-              </m:columns>
-              <m:items>
-                <m:ColumnListItem>
-                  <m:cells>
-                    <!-- Cell for ID: wrap Input+Text in one container -->
-                    <m:HBox>
-                      <!-- Editing: Input visible only when editable=true -->
-                      <m:Input
-                        value="{product>ID}"
-                        visible="{viewModel>/editable}" />
-                      <!-- Read-only: Text visible only when editable=false -->
-                      <m:Text
-                        text="{product>ID}"
-                        visible="{= !${viewModel>/editable} }" />
-                    </m:HBox>
+          <ObjectPageSubSection title="Category Info">
+            <smartForm:SmartForm
+              id="CateogoryForm"
+              entityType="ODataDemo."
+              editTogglable="true" editToggled="handleEditToggled"
+              validationMode="Async"
+              title="{Name}">
+              <smartForm:groups>
+                <smartForm:Group>
+                  <smartForm:groupElements>
+                    <!-- Category Name -->
+                    <smartForm:GroupElement label="Category">
+                      <smartField:SmartField
+                        value="{Category/Name}"
+                      />
+                    </smartForm:GroupElement>
+                  </smartForm:groupElements>
+                </smartForm:Group>
+              </smartForm:groups>
+            </smartForm:SmartForm>
 
-                    <!-- Cell for Name: similarly wrap -->
-                    <m:HBox>
-                      <m:Input
-                        value="{product>Name}"
-                        visible="{viewModel>/editable}" />
-                      <m:Text
-                        text="{product>Name}"
-                        visible="{= !${viewModel>/editable} }" />
-                    </m:HBox>
-                  </m:cells>
-                </m:ColumnListItem>
-              </m:items>
-            </m:Table>
-            <m:Toolbar visible="{viewModel>/editable}">
-              <m:ToolbarSpacer />
-              <m:Button
-                text="Add"
-                icon="sap-icon://add"
-                press="onAddCategory"
-                visible="{viewModel>/editable}" />
-              <m:Button
-                text="Delete"
-                icon="sap-icon://delete"
-                press="onDeleteCategory"
-                visible="{viewModel>/editable}" />
-            </m:Toolbar>
           </ObjectPageSubSection>
 
           <ObjectPageSubSection title="Supplier Info">
-            <form:SimpleForm
-              layout="ResponsiveGridLayout">
-              <form:content>
-                <m:Label text="Supplier Name" />
-                <m:HBox>
-                  <m:Text text="{product>/Supplier/Name}"
-                    visible="{= !${viewModel>/editable}}" />
-                  <m:Input
-                    value="{product>/Supplier/Name}"
-                    visible="{viewModel>/editable}"
-                  />
-                </m:HBox>
+            <smartForm:SmartForm
+              id="supplierSmartForm"
+              entityType="ODataDemo."
+              editTogglable="true" editToggled="handleEditToggled"
+              validationMode="Async"
+              title="{Name}">
+              <smartForm:groups>
+                <smartForm:Group>
+                  <smartForm:groupElements>
+                    <!-- Supplier Name -->
+                    <smartForm:GroupElement label="Supplier name">
+                      <smartField:SmartField
+                        value="{Supplier/Name}"
+                      />
+                    </smartForm:GroupElement>
 
-                <m:Label text="Address" />
-                <m:HBox>
-                  <m:Text text="{product>/Supplier/Address}"
-                    visible="{= !${viewModel>/editable}}" />
-                  <m:Input
-                    value="{product>/Supplier/Address}"
-                    visible="{viewModel>/editable}" />
-                </m:HBox>
-              </form:content>
-            </form:SimpleForm>
+                    <!-- Supplier Address.City -->
+                    <smartForm:GroupElement label="City">
+                      <smartField:SmartField
+                        value="{Supplier/Address/City}"
+                      />
+                    </smartForm:GroupElement>
+
+                    <!-- Supplier Address.Street -->
+                    <smartForm:GroupElement label="Street">
+                      <smartField:SmartField
+                        value="{Supplier/Address/Street}"
+                      />
+                    </smartForm:GroupElement>
+
+                  </smartForm:groupElements>
+                </smartForm:Group>
+              </smartForm:groups>
+            </smartForm:SmartForm>
+
           </ObjectPageSubSection>
         </subSections>
       </ObjectPageSection>
     </sections>
-
-    <footer >
-      <m:Toolbar visible="{viewModel>/editable}">
+    <!-- 
+    <footer>
+      <m:Toolbar>
         <m:ToolbarSpacer />
         <m:Button
           text="Save"
@@ -227,6 +172,6 @@
           press="onCancelPress"
         />
       </m:Toolbar>
-    </footer>
+    </footer> -->
   </ObjectPageLayout>
 </mvc:View>

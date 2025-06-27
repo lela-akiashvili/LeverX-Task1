@@ -1,12 +1,11 @@
 <mvc:View
   controllerName="task.controller.ProductsList"
   xmlns="sap.m"
+  xmlns:core="sap.ui.core"
   xmlns:mvc="sap.ui.core.mvc"
   xmlns:f="sap.f"
-  xmlns:form="sap.ui.layout.form"
-  xmlns:filterBar="sap.ui.comp.filterbar"
-  xmlns:core="sap.ui.core"
-  xmlns:formatter="task.utils.formatter">
+  xmlns:smartFilterBar="sap.ui.comp.smartfilterbar"
+  xmlns:smartTable="sap.ui.comp.smarttable">
 
   <f:DynamicPage id="ProductsList" headerExpanded="true" showFooter="true">
     <f:title>
@@ -23,200 +22,153 @@
         </f:breadcrumbs>
       </f:DynamicPageTitle>
     </f:title>
-
     <f:header>
       <f:DynamicPageHeader>
+
         <f:content>
-          <filterBar:FilterBar
-            id="filterBar"
-            useToolbar="true"
-            search="onFilterSearch"
-            reset="onFilterClear"
+          <smartFilterBar:SmartFilterBar
+            id="smartFilterBar"
+            entitySet="Products"
+            liveMode="true"
             showClearOnFB="true"
           >
-            <filterBar:filterGroupItems>
-
-              <!-- General Search -->
-              <filterBar:FilterGroupItem groupName="General" name="GeneralSearch" label="Search"
-                visibleInFilterBar="true">
-                <filterBar:control>
-                  <SearchField
-                    id="generalSearchField"
-                    placeholder="Search..."
-                    search=".onFilterSearch"
-                  />
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-              <!-- Dates: relesase, discontiue -->
-              <filterBar:FilterGroupItem groupName="ReleaseDate" name="ReleaseDate"
+            <smartFilterBar:controlConfiguration>
+              <smartFilterBar:ControlConfiguration
+                key="Name" visibleInAdvancedArea="true"
+                preventInitialDataFetchInValueHelpDialog="false" />
+              <smartFilterBar:ControlConfiguration
+                key="Description" visibleInAdvancedArea="true"
+                preventInitialDataFetchInValueHelpDialog="false" />
+              <smartFilterBar:ControlConfiguration
+                key="Rating" visibleInAdvancedArea="true"
+                preventInitialDataFetchInValueHelpDialog="false" />
+              <smartFilterBar:ControlConfiguration
+                key="Price" visibleInAdvancedArea="true"
+                preventInitialDataFetchInValueHelpDialog="false" />
+              <smartFilterBar:ControlConfiguration
+                label="Category Name"
+                key="Category.Name" visibleInAdvancedArea="true"
+                preventInitialDataFetchInValueHelpDialog="false" />
+              <smartFilterBar:ControlConfiguration
+                label="Supplier Name"
+                key="Supplier.Name" visibleInAdvancedArea="true"
+                preventInitialDataFetchInValueHelpDialog="false" />
+              <smartFilterBar:ControlConfiguration
+                label="Discontinued Date"
+                key="DiscontinuedDate" visibleInAdvancedArea="true"
+                conditionType="{
+                  module: 'sap.ui.comp.config.condition.DateRangeType'
+                }" />
+              <smartFilterBar:ControlConfiguration
                 label="Release Date"
-                visibleInFilterBar="true">
-                <filterBar:control>
-                  <DynamicDateRange
-                    showClearIcon="true"
-                    id="releaseDateRange"
-                    placeholder="Select date or month/year"
-                    change="onReleaseDateChange" />
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-              <filterBar:FilterGroupItem groupName="DiscontinuedDate" name="DiscontinuedDate"
-                label="Discontinued Date" visibleInFilterBar="true">
-                <filterBar:control>
-                  <DynamicDateRange
-                    showClearIcon="true"
-                    id="discontinuedDateRange"
-                    placeholder="Select date or month/year"
-                    change="onDiscontinuedDateChange"
-                    standardOptions="DATE,DATERANGE,FROM,TO,TODAY,THISWEEK" />
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-              <!-- product name suggestions -->
-              <filterBar:FilterGroupItem groupName="ProductName" name="ProductName"
-                label="Product Name Suggestions"
-                visibleInFilterBar="true">
-                <filterBar:control>
-                  <Input
-                    id="productNameInput"
-                    placeholder="Search..."
-                    submit=".onFilterSearch"
-                    showSuggestion="true"
-                    showClearIcon="true"
-                    suggestionItems="{products>/Products}">
-                    <suggestionItems>
-                      <core:Item text="{products>Name}" key="{products>ID}" />
-                    </suggestionItems>
-                  </Input>
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-
-              <!-- Supplier value helper -->
-              <filterBar:FilterGroupItem groupName="Supplier" name="SupplierNames" label="Supplier"
-                visibleInFilterBar="true">
-                <filterBar:control>
-                  <MultiInput
-                    submit="onSupplierInputSubmit"
-                    id="supplierInput"
-                    valueHelpRequest=".onVHRequested"
-                    placeholder="Filter by supplier"
-                    showClearIcon="true"
-                    tokenUpdate="onSupplierTokenUpdate"
-                  />
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-
-              <!-- catogries dropdown -->
-              <filterBar:FilterGroupItem groupName="Categories" name="CategoryKeys"
-                label="Select Categories" visibleInFilterBar="true">
-                <filterBar:control>
-                  <MultiComboBox
-                    id="categoryFilter"
-                    selectionChange="handleSelectionChange"
-                    selectionFinish="handleSelectionFinish"
-                    placeholder="Select categories">
-                    <core:Item key="C02" text="Category 1" />
-                    <core:Item key="C01" text="Category 2" />
-                    <core:Item key="C01" text="Category 3" />
-                    <core:Item key="C04" text="Category 4" />
-                    <core:Item key="C05" text="Category 5" />
-                    <core:Item key="C05" text="Category 6" />
-                  </MultiComboBox>
-                </filterBar:control>
-              </filterBar:FilterGroupItem>
-            </filterBar:filterGroupItems>
-          </filterBar:FilterBar>
+                key="ReleaseDate"
+                visibleInAdvancedArea="true"
+                conditionType="{
+                  module: 'sap.ui.comp.config.condition.DateRangeType'
+                }"
+              />
+            </smartFilterBar:controlConfiguration>
+          </smartFilterBar:SmartFilterBar>
         </f:content>
       </f:DynamicPageHeader>
     </f:header>
 
+
     <f:content>
-      <Table
-        id="productsTable"
-        inset="false"
-        width="auto"
-        mode="MultiSelect"
-        selectionChange=".onSelectionChange"
-        noDataText="No products available"
-        items="{products>/Products}"
-        growing="true"
-        growingThreshold="20"
-        updateFinished="onProductsTableUpdateFinished"
-      >
-        <headerToolbar>
-          <Toolbar>
-            <Title text="{= 'Products (' + ${viewModel>/productCount} + ')'}"
-              level="H2" />
-            <ToolbarSpacer />
-            <Button
-              text="New Product"
-              icon="sap-icon://add"
-              press=".onCreatePress"
-            />
-            <Button
-              text="Delete Selected"
-              enabled="false"
-              id="deleteButton"
-              icon="sap-icon://delete"
-              press=".onDelete"
-            />
-          </Toolbar>
-        </headerToolbar>
-        <columns>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="ID" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Name" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Release Date" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Discontinued Date" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Price" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Rating" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Supplier" />
-          </Column>
-          <Column demandPopin="true" minScreenWidth="Desktop">
-            <Text text="Categories" />
-          </Column>
-        </columns>
-        <items>
-          <ColumnListItem type="Active" press="onRowPress">
-            <cells>
-              <Text text="{products>ID}" />
-              <Text text="{products>Name}" />
-              <Text
-                text="{
-                path: 'products>ReleaseDate',
-                type: 'sap.ui.model.type.Date',
-                formatOptions: { pattern: 'MM/yyyy' }
-              }"
-              />
-              <Text
-                text="{
-                 path: 'products>DiscontinuedDate',
-                 type: 'sap.ui.model.type.Date',
-                 formatOptions: { pattern: 'MM/yyyy' }
-              }" />
-              <Text text="{products>Price}$" />
-              <RatingIndicator displayOnly="true" value="{products>Rating}" iconSize="1rem" />
-              <Text text="{products>Supplier/Name}" />
-              <Text
-                text="{
-                path: 'products>Categories',
-                formatter: '.formatter.formatCategories'
-              }"
-              />
-            </cells>
-          </ColumnListItem>
-        </items>
-      </Table>
+      <smartTable:SmartTable
+        id="smartTable"
+        header="Products"
+        tableType="ResponsiveTable"
+        entitySet="Products"
+        smartFilterId="smartFilterBar"
+        enableExport="true"
+        demandPopin="true"
+        beforeRebindTable="onBeforeRebindTable"
+        enableAutoBinding="true"
+        showRowCount="true"
+        initiallyVisibleFields="Name,Description">
+        <Table multiSelectMode="Default">
+          <columns>
+            <!-- Price -->
+            <Column>
+              <customData>
+                <core:CustomData
+                  key="p13nData"
+                  value='{"columnKey":"Price","leadingProperty":"Price",
+                  "sortProperty":"Price",
+               "filterProperty":"Price",
+                  "columnIndex":2}' />
+              </customData>
+              <Text text="Price" />
+            </Column>
+            <!-- Category -->
+            <Column>
+              <customData>
+                <core:CustomData
+                  key="p13nData"
+                  value='{"columnKey":"Category","leadingProperty":"Category/Name",  "sortProperty":"Category/Name",
+               "filterProperty":"Category/Name","columnIndex":3}' />
+              </customData>
+              <Text text="Category" />
+            </Column>
+            <!-- Supplier -->
+            <Column>
+              <customData>
+                <core:CustomData
+                  key="p13nData"
+                  value='{"columnKey":"Supplier","leadingProperty":"Supplier/Name",  "sortProperty":"Supplier/Name",
+               "filterProperty":"Supplier/Name","columnIndex":4}' />
+              </customData>
+              <Text text="Supplier" />
+            </Column>
+            <!-- Release Date -->
+            <Column>
+              <customData>
+                <core:CustomData
+                  key="p13nData"
+                  value='{"columnKey":"ReleaseDate","leadingProperty":"ReleaseDate","sortProperty":"ReleaseDate",
+               "filterProperty":"ReleaseDate","columnIndex":5}' />
+              </customData>
+              <Text text="Release Date" />
+            </Column>
+            <!-- Discontinued Date -->
+            <Column>
+              <customData>
+                <core:CustomData
+                  key="p13nData"
+                  value='{"columnKey":"DiscontinuedDate","leadingProperty":"DiscontinuedDate","sortProperty":"DiscontinuedDate",
+               "filterProperty":"DiscontinuedDate","columnIndex":6}' />
+              </customData>
+              <Text text="Discontinued Date" />
+            </Column>
+            <!-- Rating -->
+            <Column>
+              <customData>
+                <core:CustomData
+                  key="p13nData"
+                  value='{"columnKey":"Rating","sortProperty":"Rating",
+               "filterProperty":"Rating","leadingProperty":"Rating","columnIndex":7}' />
+              </customData>
+              <Text text="Rating" />
+            </Column>
+          </columns>
+          <items>
+            <ColumnListItem type="Navigation" press=".onRowPress">
+              <cells>
+                <Text
+                  text="{path:'Price', type:'sap.ui.model.type.Float', formatOptions:{minFractionDigits:2}} USD" />
+                <Text text="{Category/Name}" />
+                <Text text="{Supplier/Name}" />
+                <Text
+                  text="{path:'ReleaseDate', type:'sap.ui.model.type.Date', formatOptions:{style:'medium'}}" />
+                <Text
+                  text="{path:'DiscontinuedDate', type:'sap.ui.model.type.Date', formatOptions:{style:'medium'}}" />
+                <RatingIndicator maxValue="5" value="{Rating}" iconSize="1rem" />
+              </cells>
+            </ColumnListItem>
+          </items>
+        </Table>
+      </smartTable:SmartTable>
     </f:content>
   </f:DynamicPage>
 </mvc:View>
