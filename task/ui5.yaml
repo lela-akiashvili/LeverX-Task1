@@ -4,17 +4,14 @@ specVersion: "3.1"
 metadata:
   name: task
 type: application
+
 server:
   customMiddleware:
-    - name: fiori-tools-proxy
+    - name: ui5-middleware-simpleproxy
       afterMiddleware: compression
+      mountPath: /odata
       configuration:
-        ignoreCertError: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
-        ui5:
-          path:
-            - /resources
-            - /test-resources
-          url: https://ui5.sap.com
+        baseUri: https://services.odata.org/V2/(S(5a1hmwjv2azjxequasigut4h))/OData/OData.svc/
     - name: fiori-tools-appreload
       afterMiddleware: compression
       configuration:

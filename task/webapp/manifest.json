@@ -10,10 +10,20 @@
     "title": "{{appTitle}}",
     "description": "{{appDescription}}",
     "resources": "resources.json",
+
     "sourceTemplate": {
       "id": "@sap/generator-fiori:basic",
       "version": "1.18.0",
       "toolsId": "854ecd2c-cddf-4b9c-add5-f014550e1b46"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/odata/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "2.0"
+        }
+      }
     }
   },
   "sap.ui": {
@@ -48,6 +58,17 @@
       "cozy": true
     },
     "models": {
+      "": {
+        "type": "sap.ui.model.odata.v2.ODataModel",
+        "dataSource": "mainService",
+        "settings": {
+          "defaultBindingMode": "TwoWay",
+          "defaultCountMode": "Inline",
+          "preload": true,
+          "useBatch": true,
+          "disableHeadRequestForToken": true
+        }
+      },
       "i18n": {
         "type": "sap.ui.model.resource.ResourceModel",
         "settings": {
@@ -80,11 +101,10 @@
           "target": "ProductsList"
         },
         {
-          "pattern": "ProductDetails/{productId}",
+          "pattern": "ProductDetails/{productPath}",
           "name": "ProductDetails",
           "target": "ProductDetails"
         }
-        
       ],
       "targets": {
         "ProductsList": {
